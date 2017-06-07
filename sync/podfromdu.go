@@ -46,6 +46,8 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 			HostIPC:     primaryConfig.IpcMode == "host",
 			HostNetwork: primaryConfig.NetworkMode == "host",
 			HostPID:     primaryConfig.PidMode == "host",
+			// Handle global service case
+			NodeName: deploymentUnit.Host.Name,
 		},
 	}
 }

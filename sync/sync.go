@@ -6,9 +6,9 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/kattle/types"
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/kattle/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -107,6 +107,13 @@ func Sync(m metadata.Client, rancherClient *client.RancherClient, clientset *kub
 			return err
 		}
 		deploymentUnit.RevisionConfig = *revision.Config
+		if deploymentUnit.HostId != "" {
+			host, err := rancherClient.Host.ById(deploymentUnit.HostId)
+			if err != nil {
+				return err
+			}
+			deploymentUnit.Host = *host
+		}
 		pods = append(pods, PodFromDeploymentUnit(*deploymentUnit))
 	}
 

@@ -52,9 +52,21 @@ func getPodSpec(deploymentUnit types.DeploymentUnit, config client.LaunchConfig)
 }
 
 func getSecurityContext(container client.Container) *v1.SecurityContext {
+	var capAdd []v1.Capability
+	for _, cap := range container.CapAdd {
+		capAdd = append(capAdd, v1.Capability(cap))
+	}
+	var capDrop []v1.Capability
+	for _, cap := range container.CapDrop {
+		capDrop = append(capDrop, v1.Capability(cap))
+	}
 	return &v1.SecurityContext{
 		Privileged:             &container.Privileged,
 		ReadOnlyRootFilesystem: &container.ReadOnly,
+		Capabilities: &v1.Capabilities{
+			Add:  capAdd,
+			Drop: capDrop,
+		},
 	}
 }
 

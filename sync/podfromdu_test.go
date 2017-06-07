@@ -10,6 +10,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSecurityContext(t *testing.T) {
+	securityContext := getSecurityContext(client.Container{
+		Privileged: true,
+		ReadOnly:   true,
+		CapAdd: []string{
+			"capadd1",
+			"capadd2",
+		},
+		CapDrop: []string{
+			"capdrop1",
+			"capdrop2",
+		},
+	})
+	assert.Equal(t, *securityContext.Privileged, true)
+	assert.Equal(t, *securityContext.ReadOnlyRootFilesystem, true)
+	assert.Equal(t, securityContext.Capabilities.Add, []v1.Capability{
+		v1.Capability("capadd1"),
+		v1.Capability("capadd2"),
+	})
+	assert.Equal(t, securityContext.Capabilities.Drop, []v1.Capability{
+		v1.Capability("capdrop1"),
+		v1.Capability("capdrop2"),
+	})
+}
+
 func TestGetVolumes(t *testing.T) {
 	assert.Equal(t, getVolumes(types.DeploymentUnit{
 		Containers: []client.Container{

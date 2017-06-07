@@ -33,6 +33,11 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 
 	primaryConfig := deploymentUnit.RevisionConfig.LaunchConfig
 
+	var hostAffinityLabelMap map[string]string
+	if label, ok := primaryConfig.Labels[hostAffinityLabel]; ok {
+		hostAffinityLabelMap = ParseLabel(label)
+	}
+
 	return v1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name: deploymentUnit.Uuid,
@@ -48,6 +53,8 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 			HostPID:     primaryConfig.PidMode == "host",
 			// Handle global service case
 			NodeName: deploymentUnit.Host.Name,
+			// TODO: all types of affinity
+			NodeSelector: hostAffinityLabelMap,
 		},
 	}
 }

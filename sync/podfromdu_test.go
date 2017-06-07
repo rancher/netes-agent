@@ -10,6 +10,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetPodSpec(t *testing.T) {
+	assert.Equal(t, getPodSpec(types.DeploymentUnit{}, client.LaunchConfig{
+		RestartPolicy: &client.RestartPolicy{
+			Name: "always",
+		},
+		IpcMode:     "host",
+		NetworkMode: "host",
+		PidMode:     "host",
+	}), v1.PodSpec{
+		RestartPolicy: v1.RestartPolicyAlways,
+		HostIPC:       true,
+		HostNetwork:   true,
+		HostPID:       true,
+		DNSPolicy:     v1.DNSDefault,
+	})
+}
+
 func TestSecurityContext(t *testing.T) {
 	securityContext := getSecurityContext(client.Container{
 		Privileged: true,

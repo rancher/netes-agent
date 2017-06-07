@@ -13,15 +13,7 @@ import (
 func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 	var containers []v1.Container
 	for _, container := range deploymentUnit.Containers {
-		containers = append(containers, v1.Container{
-			Name:            container.Uuid,
-			Image:           getImage(container),
-			Command:         container.EntryPoint,
-			Args:            container.Command,
-			Env:             getEnvironment(container),
-			SecurityContext: getSecurityContext(container),
-			VolumeMounts:    getVolumeMounts(container),
-		})
+		containers = append(containers, getContainer(container))
 	}
 
 	primaryConfig := deploymentUnit.RevisionConfig.LaunchConfig
@@ -39,15 +31,42 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 	}
 }
 
+func getContainer(container client.Container) v1.Container {
+	return v1.Container{
+		Name:            container.Uuid,
+		Image:           getImage(container),
+		Command:         container.EntryPoint,
+		Args:            container.Command,
+		TTY:             container.Tty,
+		Stdin:           container.StdinOpen,
+		WorkingDir:      container.WorkingDir,
+		Env:             getEnvironment(container),
+		SecurityContext: getSecurityContext(container),
+		VolumeMounts:    getVolumeMounts(container),
+	}
+}
+
 func getPodSpec(deploymentUnit types.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
+	var restartPolicy v1.RestartPolicy
+	if config.RestartPolicy != nil {
+		switch config.RestartPolicy.Name {
+		case "no":
+			restartPolicy = v1.RestartPolicyNever
+		case "on-failure":
+			restartPolicy = v1.RestartPolicyOnFailure
+		case "always":
+			restartPolicy = v1.RestartPolicyAlways
+		}
+	}
 	return v1.PodSpec{
-		HostIPC:      config.IpcMode == "host",
-		HostNetwork:  config.NetworkMode == "host",
-		HostPID:      config.PidMode == "host",
-		DNSPolicy:    v1.DNSDefault,
-		NodeName:     deploymentUnit.Host.Name,
-		NodeSelector: getNodeSelector(config),
-		Volumes:      getVolumes(deploymentUnit),
+		RestartPolicy: restartPolicy,
+		HostIPC:       config.IpcMode == "host",
+		HostNetwork:   config.NetworkMode == "host",
+		HostPID:       config.PidMode == "host",
+		DNSPolicy:     v1.DNSDefault,
+		NodeName:      deploymentUnit.Host.Name,
+		NodeSelector:  getNodeSelector(config),
+		Volumes:       getVolumes(deploymentUnit),
 	}
 }
 

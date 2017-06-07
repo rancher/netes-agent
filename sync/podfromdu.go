@@ -13,55 +13,76 @@ import (
 func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 	var containers []v1.Container
 	for _, container := range deploymentUnit.Containers {
-		image := strings.SplitN(container.ImageUuid, ":", 2)[1]
-		var environment []v1.EnvVar
-		for k, v := range container.Environment {
-			environment = append(environment, v1.EnvVar{
-				Name:  k,
-				Value: fmt.Sprint(v),
-			})
-		}
 		containers = append(containers, v1.Container{
-			Name:  container.Uuid,
-			Image: image,
-			Env:   environment,
-			SecurityContext: &v1.SecurityContext{
-				Privileged: &container.Privileged,
-			},
-			VolumeMounts: getVolumeMounts(container),
-			// TODO: entrypoint, commands
+			Name:            container.Uuid,
+			Image:           getImage(container),
+			Command:         container.EntryPoint,
+			Args:            container.Command,
+			Env:             getEnvironment(container),
+			SecurityContext: getSecurityContext(container),
+			VolumeMounts:    getVolumeMounts(container),
 		})
 	}
 
 	primaryConfig := deploymentUnit.RevisionConfig.LaunchConfig
-
-	var hostAffinityLabelMap map[string]string
-	if label, ok := primaryConfig.Labels[hostAffinityLabel]; ok {
-		hostAffinityLabelMap = ParseLabel(label)
-	}
+	podSpec := getPodSpec(deploymentUnit, *primaryConfig)
+	podSpec.Containers = containers
 
 	return v1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name: deploymentUnit.Uuid,
 			Labels: map[string]string{
-				"io.rancher.kattle":   "true",
-				"io.rancher.revision": deploymentUnit.RevisionId,
+				revisionLabel: deploymentUnit.RevisionId,
 			},
 		},
-		Spec: v1.PodSpec{
-			Containers:  containers,
-			HostIPC:     primaryConfig.IpcMode == "host",
-			HostNetwork: primaryConfig.NetworkMode == "host",
-			HostPID:     primaryConfig.PidMode == "host",
-			// Rancher DNS
-			DNSPolicy: v1.DNSDefault,
-			// Handle global service case
-			NodeName: deploymentUnit.Host.Name,
-			// TODO: all types of affinity
-			NodeSelector: hostAffinityLabelMap,
-			Volumes:      getVolumes(deploymentUnit),
-		},
+		Spec: podSpec,
 	}
+}
+
+func getPodSpec(deploymentUnit types.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
+	return v1.PodSpec{
+		HostIPC:      config.IpcMode == "host",
+		HostNetwork:  config.NetworkMode == "host",
+		HostPID:      config.PidMode == "host",
+		DNSPolicy:    v1.DNSDefault,
+		NodeName:     deploymentUnit.Host.Name,
+		NodeSelector: getNodeSelector(config),
+		Volumes:      getVolumes(deploymentUnit),
+	}
+}
+
+func getSecurityContext(container client.Container) *v1.SecurityContext {
+	return &v1.SecurityContext{
+		Privileged:             &container.Privileged,
+		ReadOnlyRootFilesystem: &container.ReadOnly,
+	}
+}
+
+func getNodeSelector(config client.LaunchConfig) map[string]string {
+	var hostAffinityLabelMap map[string]string
+	if label, ok := config.Labels[hostAffinityLabel]; ok {
+		hostAffinityLabelMap = ParseLabel(label)
+	}
+	return hostAffinityLabelMap
+}
+
+func getImage(container client.Container) string {
+	split := strings.SplitN(container.ImageUuid, ":", 2)
+	if len(split) > 1 {
+		return split[1]
+	}
+	return ""
+}
+
+func getEnvironment(container client.Container) []v1.EnvVar {
+	var environment []v1.EnvVar
+	for k, v := range container.Environment {
+		environment = append(environment, v1.EnvVar{
+			Name:  k,
+			Value: fmt.Sprint(v),
+		})
+	}
+	return environment
 }
 
 func getVolumes(deploymentUnit types.DeploymentUnit) []v1.Volume {

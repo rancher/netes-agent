@@ -4,20 +4,15 @@ import (
 	"os"
 	"time"
 
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/urfave/cli"
-	"github.com/Sirupsen/logrus"
-	"github.com/rancher/kattle/sync"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/kattle/sync"
+	"github.com/urfave/cli"
 )
 
 const (
-	metadataURL = "http://rancher-metadata/2015-12-19"
-	//kubernetresURL        = "http://kubernetes.kubernetes.rancher.internal"
-	kubernetresURL        = "http://165.227.2.161/"
 	cattleURLEnv          = "CATTLE_URL"
 	cattleURLAccessKeyEnv = "CATTLE_ACCESS_KEY"
 	cattleURLSecretKeyEnv = "CATTLE_SECRET_KEY"
@@ -30,20 +25,28 @@ func main() {
 	app.Name = "kattle"
 	app.Version = VERSION
 	app.Usage = "You need help!"
-	app.Action = func(c *cli.Context) error {
-		logrus.Info("I'm a turkey")
-		return run()
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "kubernetes-master",
+			Value: "http://165.227.2.161/",
+		},
+		cli.StringFlag{
+			Name:  "metadata-url",
+			Value: "http://rancher-metadata/2015-12-19",
+		},
 	}
-
+	app.Action = action
 	app.Run(os.Args)
 }
 
-func run() error {
+func action(c *cli.Context) error {
 	rancherClient, err := createRancherClient()
 	if err != nil {
 		return err
 	}
-	kubernernetesClient, err := createKubernetesClient()
+
+	kubernetesURL := c.String("kubernetes-url")
+	kubernernetesClient, err := createKubernetesClient(kubernetesURL)
 	if err != nil {
 		return err
 	}
@@ -78,8 +81,8 @@ func createRancherClient() (*client.RancherClient, error) {
 	})
 }
 
-func createKubernetesClient() (*kubernetes.Clientset, error) {
+func createKubernetesClient(url string) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(&rest.Config{
-		Host: kubernetresURL,
+		Host: url,
 	})
 }

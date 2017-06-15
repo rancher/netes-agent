@@ -7,116 +7,14 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/go-rancher-metadata/metadata"
-	"github.com/rancher/go-rancher/v2"
-	"github.com/rancher/kattle/types"
 	"k8s.io/client-go/kubernetes"
 )
 
-func Sync(m metadata.Client, rancherClient *client.RancherClient, clientset *kubernetes.Clientset) error {
-	/*containers, err := m.GetContainers()
-	if err != nil {
-		return err
-	}*/
-
-	deploymentUnits := map[string]*types.DeploymentUnit{}
-
-	/*for _, container := range containers {
-	if _, ok := container.Labels["kattle"]; !ok {
-		continue
-	}
-
-	// TODO: only list containers with label
-	apiContainers, err := rancherClient.Container.List(&client.ListOpts{})
-	if err != nil {
-		return err
-	}
-
-	for _, apiContainer := range apiContainers.Data {
-		if apiContainer.Uuid == container.UUID {
-			dus2, err := rancherClient.DeploymentUnit.List(&client.ListOpts{})
-			if err != nil {
-				return err
-			}
-
-			var dus []client.DeploymentUnit
-			for _, du2 := range dus2.Data {
-				if du2.Uuid == apiContainer.DeploymentUnitUuid {
-					dus = append(dus, du2)
-				}
-			}
-			if len(dus) == 0 {
-				continue
-			}
-
-			du := dus[0]
-
-			fmt.Println("x", du)
-			if deploymentUnit, ok := deploymentUnits[du.Uuid]; ok {
-				deploymentUnit.Containers = append(deploymentUnit.Containers, &apiContainer)
-			} else {
-				deploymentUnits[du.Uuid] = &types.DeploymentUnit{
-					Uuid:       du.Uuid,
-					RevisionId: du.RevisionId,
-					Containers: []*client.Container{
-						&apiContainer,
-					},
-				}
-			}
-		}
-	}*/
-
-	apiContainers, err := rancherClient.Container.List(&client.ListOpts{
-		Filters: map[string]interface{}{
-			"state": "running",
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, apiContainer := range apiContainers.Data {
-		if _, ok := apiContainer.Labels[kattleLabel]; !ok {
-			continue
-		}
-
-		du, err := rancherClient.DeploymentUnit.ById(apiContainer.DeploymentUnitId)
-		if err != nil {
-			return err
-		}
-
-		if deploymentUnit, ok := deploymentUnits[du.Id]; ok {
-			deploymentUnit.Containers = append(deploymentUnit.Containers, apiContainer)
-		} else {
-			deploymentUnits[du.Id] = &types.DeploymentUnit{
-				Id:                  du.Id,
-				Uuid:                du.Uuid,
-				HostId:              du.HostId,
-				RevisionId:          du.RevisionId,
-				RequestedRevisionId: du.RequestedRevisionId,
-				Containers: []client.Container{
-					apiContainer,
-				},
-			}
-		}
-	}
-
+func Sync(clientset *kubernetes.Clientset, deploymentUnits []metadata.DeploymentUnit) error {
 	var pods []v1.Pod
 	for _, deploymentUnit := range deploymentUnits {
-		revision, err := rancherClient.Revision.ById(deploymentUnit.RevisionId)
-		if err != nil {
-			return err
-		}
-		deploymentUnit.RevisionConfig = *revision.Config
-		if deploymentUnit.HostId != "" {
-			host, err := rancherClient.Host.ById(deploymentUnit.HostId)
-			if err != nil {
-				return err
-			}
-			deploymentUnit.Host = *host
-		}
-		pods = append(pods, PodFromDeploymentUnit(*deploymentUnit))
+		pods = append(pods, PodFromDeploymentUnit(deploymentUnit))
 	}
-
 	return reconsilePods(clientset, pods)
 }
 
@@ -128,10 +26,9 @@ func reconsilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
 			existingPod, err := clientset.Pods("default").Get(pod.Name)
 			if err != nil {
 				if err = createPod(clientset, pod); err != nil {
-					//return err
 					logrus.Error(err)
+					return
 				}
-				//continue
 				return
 			}
 
@@ -139,38 +36,16 @@ func reconsilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
 				if revision != existingRevision {
 					logrus.Info("DELETE1")
 					if err = deletePod(clientset, pod); err != nil {
-						//return err
 						logrus.Error(err)
+						return
 					}
 					if err = createPod(clientset, pod); err != nil {
-						//return err
 						logrus.Error(err)
+						return
 					}
 				}
 			}
-
 		}(pod)
-		/*revision := pod.Labels[revisionLabel]
-
-		existingPod, err := clientset.Pods("default").Get(pod.Name)
-		if err != nil {
-			if err = createPod(clientset, pod); err != nil {
-				return err
-			}
-			continue
-		}
-
-		if existingRevision, ok := existingPod.Labels[revisionLabel]; ok {
-			if revision != existingRevision {
-				logrus.Info("DELETE1")
-				if err = deletePod(clientset, pod); err != nil {
-					return err
-				}
-				if err = createPod(clientset, pod); err != nil {
-					return err
-				}
-			}
-		}*/
 	}
 
 	podNames := map[string]bool{}
@@ -185,15 +60,14 @@ func reconsilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
 
 	for _, pod := range existingPods.Items {
 		go func(pod v1.Pod) {
-			if _, ok := pod.Labels[kattleLabel]; !ok {
-				//continue
+			if _, ok := pod.Labels[revisionLabel]; !ok {
 				return
 			}
 			if _, ok := podNames[pod.Name]; !ok {
 				logrus.Info("DELETE2")
 				if err = deletePod(clientset, pod); err != nil {
-					//return err
 					logrus.Error(err)
+					return
 				}
 			}
 		}(pod)

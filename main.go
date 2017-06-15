@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/kattle/sync"
 	"github.com/urfave/cli"
@@ -27,46 +28,57 @@ func main() {
 	app.Usage = "You need help!"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "kubernetes-master",
-			Value: "http://165.227.2.161/",
+			Name: "kubernetes-master",
 		},
 		cli.StringFlag{
-			Name:  "metadata-url",
-			Value: "http://rancher-metadata/2015-12-19",
+			Name: "username",
+		},
+		cli.StringFlag{
+			Name: "password",
+		},
+		cli.StringFlag{
+			Name: "metadata-url",
 		},
 	}
 	app.Action = action
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		panic(err)
+	}
 }
 
 func action(c *cli.Context) error {
-	rancherClient, err := createRancherClient()
+	/*rancherClient, err := createRancherClient()
+	if err != nil {
+		return err
+	}*/
+
+	kubernetesURL := c.String("kubernetes-master")
+	username := c.String("username")
+	password := c.String("password")
+	clientset, err := createKubernetesClient(kubernetesURL, username, password)
 	if err != nil {
 		return err
 	}
 
-	kubernetesURL := c.String("kubernetes-url")
-	kubernernetesClient, err := createKubernetesClient(kubernetesURL)
-	if err != nil {
-		return err
-	}
+	metadataURL := c.String("metadata-url")
+	m := metadata.NewClient(metadataURL)
 
-	/*m := metadata.NewClient(metadataURL)
-
-	return m.OnChangeWithError(5, func(_ string) {
-		if err := sync.Sync(m, rancherClient, kubernernetesClient); err != nil {
-			logrus.Errorf("Sync failed: %v", err)
-		}
-	})*/
+	//return m.OnChangeWithError(5, func(_ string) {
+	/*if err := sync.Sync(m, rancherClient, kubernernetesClient); err != nil {
+		logrus.Errorf("Sync failed: %v", err)
+	}*/
+	//})
 
 	for {
-		if err = sync.Sync(nil, rancherClient, kubernernetesClient); err != nil {
+		deploymentUnits, err := m.GetDeploymentUnits()
+		if err != nil {
 			return err
 		}
-		time.Sleep(time.Second * 2)
+		if err = sync.Sync(clientset, deploymentUnits); err != nil {
+			return err
+		}
+		time.Sleep(2 * time.Second)
 	}
-
-	return sync.Sync(nil, rancherClient, kubernernetesClient)
 }
 
 func createRancherClient() (*client.RancherClient, error) {
@@ -81,8 +93,11 @@ func createRancherClient() (*client.RancherClient, error) {
 	})
 }
 
-func createKubernetesClient(url string) (*kubernetes.Clientset, error) {
+func createKubernetesClient(url, username, password string) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(&rest.Config{
-		Host: url,
+		Host:     url,
+		Username: username,
+		Password: password,
+		Insecure: true,
 	})
 }

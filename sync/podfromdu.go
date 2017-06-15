@@ -6,17 +6,17 @@ import (
 
 	"k8s.io/client-go/pkg/api/v1"
 
+	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
-	"github.com/rancher/kattle/types"
 )
 
-func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
+func PodFromDeploymentUnit(deploymentUnit metadata.DeploymentUnit) v1.Pod {
 	var containers []v1.Container
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
 	}
 
-	primaryConfig := deploymentUnit.RevisionConfig.LaunchConfig
+	primaryConfig := deploymentUnit.Revision.Config.LaunchConfig
 	podSpec := getPodSpec(deploymentUnit, *primaryConfig)
 	podSpec.Containers = containers
 
@@ -46,7 +46,7 @@ func getContainer(container client.Container) v1.Container {
 	}
 }
 
-func getPodSpec(deploymentUnit types.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
+func getPodSpec(deploymentUnit metadata.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
 	var restartPolicy v1.RestartPolicy
 	if config.RestartPolicy != nil {
 		switch config.RestartPolicy.Name {
@@ -116,7 +116,7 @@ func getEnvironment(container client.Container) []v1.EnvVar {
 	return environment
 }
 
-func getVolumes(deploymentUnit types.DeploymentUnit) []v1.Volume {
+func getVolumes(deploymentUnit metadata.DeploymentUnit) []v1.Volume {
 	var volumes []v1.Volume
 	for _, container := range deploymentUnit.Containers {
 		for _, volume := range container.DataVolumes {

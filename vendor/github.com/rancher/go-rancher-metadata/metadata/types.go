@@ -1,5 +1,16 @@
 package metadata
 
+import (
+	rancherClient "github.com/rancher/go-rancher/v2"
+)
+
+type DeploymentUnit struct {
+	rancherClient.DeploymentUnit
+	Containers []rancherClient.Container
+	Revision   rancherClient.Revision
+	Host       rancherClient.Host
+}
+
 type Stack struct {
 	EnvironmentName string    `json:"environment_name"`
 	EnvironmentUUID string    `json:"environment_uuid"`

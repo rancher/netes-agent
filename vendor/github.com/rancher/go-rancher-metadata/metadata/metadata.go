@@ -18,6 +18,7 @@ type Client interface {
 	GetSelfServiceByName(string) (Service, error)
 	GetSelfService() (Service, error)
 	GetSelfStack() (Stack, error)
+	GetDeploymentUnits() ([]DeploymentUnit, error)
 	GetServices() ([]Service, error)
 	GetStacks() ([]Stack, error)
 	GetContainers() ([]Container, error)
@@ -162,6 +163,19 @@ func (m *client) GetSelfStack() (Stack, error) {
 	}
 
 	return stack, nil
+}
+
+func (m *client) GetDeploymentUnits() ([]DeploymentUnit, error) {
+	resp, err := m.SendRequest("/deploymentunits")
+	var deploymentUnits []DeploymentUnit
+	if err != nil {
+		return deploymentUnits, err
+	}
+
+	if err = json.Unmarshal(resp, &deploymentUnits); err != nil {
+		return deploymentUnits, err
+	}
+	return deploymentUnits, nil
 }
 
 func (m *client) GetServices() ([]Service, error) {

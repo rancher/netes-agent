@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/util/intstr"
 
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
@@ -43,6 +44,7 @@ func getContainer(container client.Container) v1.Container {
 		Env:             getEnvironment(container),
 		SecurityContext: getSecurityContext(container),
 		VolumeMounts:    getVolumeMounts(container),
+		LivenessProbe:   getLivenessProbe(container),
 	}
 }
 
@@ -68,6 +70,53 @@ func getPodSpec(deploymentUnit metadata.DeploymentUnit, config client.LaunchConf
 		NodeSelector:  getNodeSelector(config),
 		Volumes:       getVolumes(deploymentUnit),
 	}
+}
+
+func getLivenessProbe(container client.Container) *v1.Probe {
+	healthcheck := container.HealthCheck
+
+	timeoutSeconds := int32(healthcheck.ResponseTimeout / 1000)
+	if timeoutSeconds == 0 {
+		timeoutSeconds = 1
+	}
+
+	periodSeconds := int32(healthcheck.Interval / 1000)
+	if periodSeconds == 0 {
+		periodSeconds = 1
+	}
+
+	probe := v1.Probe{
+		TimeoutSeconds:   timeoutSeconds,
+		PeriodSeconds:    periodSeconds,
+		SuccessThreshold: int32(healthcheck.HealthyThreshold),
+		FailureThreshold: int32(healthcheck.UnhealthyThreshold),
+	}
+	port := intstr.IntOrString{
+		IntVal: int32(healthcheck.Port),
+	}
+
+	if healthcheck.RequestLine == "" {
+		probe.Handler = v1.Handler{
+			TCPSocket: &v1.TCPSocketAction{
+				Port: port,
+			},
+		}
+	} else {
+		parts := strings.Split(healthcheck.RequestLine, " ")
+		if len(parts) < 3 {
+			return nil
+		}
+		// TODO: first and third parts completely ignored
+		path := parts[1]
+		probe.Handler = v1.Handler{
+			HTTPGet: &v1.HTTPGetAction{
+				Path: path,
+				Port: port,
+			},
+		}
+	}
+
+	return &probe
 }
 
 func getSecurityContext(container client.Container) *v1.SecurityContext {

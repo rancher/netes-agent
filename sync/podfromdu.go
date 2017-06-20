@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/util/intstr"
 
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
@@ -22,7 +23,7 @@ func PodFromDeploymentUnit(deploymentUnit metadata.DeploymentUnit) v1.Pod {
 	podSpec.Containers = containers
 
 	return v1.Pod{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: deploymentUnit.Uuid,
 			Labels: map[string]string{
 				revisionLabel: deploymentUnit.RevisionId,
@@ -74,6 +75,9 @@ func getPodSpec(deploymentUnit metadata.DeploymentUnit, config client.LaunchConf
 
 func getLivenessProbe(container client.Container) *v1.Probe {
 	healthcheck := container.HealthCheck
+	if healthcheck == nil {
+		return nil
+	}
 
 	timeoutSeconds := int32(healthcheck.ResponseTimeout / 1000)
 	if timeoutSeconds == 0 {

@@ -74,7 +74,19 @@ func action(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		if err = sync.Sync(clientset, deploymentUnits); err != nil {
+		volumes, err := m.GetVolumes()
+		if err != nil {
+			return err
+		}
+		volumeDrivers, err := m.GetVolumeTemplates()
+		if err != nil {
+			return err
+		}
+		storageDrivers, err := m.GetStorageDrivers()
+		if err != nil {
+			return err
+		}
+		if err = sync.Sync(clientset, deploymentUnits, volumes, volumeDrivers, storageDrivers); err != nil {
 			return err
 		}
 		time.Sleep(2 * time.Second)
@@ -98,6 +110,8 @@ func createKubernetesClient(url, username, password string) (*kubernetes.Clients
 		Host:     url,
 		Username: username,
 		Password: password,
-		Insecure: true,
+		TLSClientConfig: rest.TLSClientConfig{
+			Insecure: true,
+		},
 	})
 }

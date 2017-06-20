@@ -3,14 +3,15 @@ package sync
 import (
 	"time"
 
-	"k8s.io/client-go/pkg/api/v1"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/go-rancher-metadata/metadata"
+	"github.com/rancher/go-rancher/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
-func Sync(clientset *kubernetes.Clientset, deploymentUnits []metadata.DeploymentUnit) error {
+func Sync(clientset *kubernetes.Clientset, deploymentUnits []metadata.DeploymentUnit, volumes []client.Volume, volumeTemplates []client.VolumeTemplate, storageDrivers []client.StorageDriver) error {
 	var pods []v1.Pod
 	for _, deploymentUnit := range deploymentUnits {
 		pods = append(pods, PodFromDeploymentUnit(deploymentUnit))
@@ -23,7 +24,7 @@ func reconsilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
 		go func(pod v1.Pod) {
 			revision := pod.Labels[revisionLabel]
 
-			existingPod, err := clientset.Pods("default").Get(pod.Name)
+			existingPod, err := clientset.Pods("default").Get(pod.Name, metav1.GetOptions{})
 			if err != nil {
 				if err = createPod(clientset, pod); err != nil {
 					logrus.Error(err)
@@ -53,7 +54,7 @@ func reconsilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
 		podNames[pod.Name] = true
 	}
 
-	existingPods, err := clientset.Pods("default").List(v1.ListOptions{})
+	existingPods, err := clientset.Pods("default").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -84,11 +85,11 @@ func createPod(clientset *kubernetes.Clientset, pod v1.Pod) error {
 
 func deletePod(clientset *kubernetes.Clientset, pod v1.Pod) error {
 	logrus.Infof("Deleting %s", pod.Name)
-	if err := clientset.Pods("default").Delete(pod.Name, &v1.DeleteOptions{}); err != nil {
+	if err := clientset.Pods("default").Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 	for i := 0; i < 20; i++ {
-		if _, err := clientset.Pods("default").Get(pod.Name); err != nil {
+		if _, err := clientset.Pods("default").Get(pod.Name, metav1.GetOptions{}); err != nil {
 			break
 		}
 		time.Sleep(250 * time.Millisecond)

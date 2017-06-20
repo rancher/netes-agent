@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	rancherClient "github.com/rancher/go-rancher/v2"
 )
 
 type Client interface {
@@ -26,6 +28,9 @@ type Client interface {
 	GetHosts() ([]Host, error)
 	GetHost(string) (Host, error)
 	GetNetworks() ([]Network, error)
+	GetVolumes() ([]rancherClient.Volume, error)
+	GetVolumeTemplates() ([]rancherClient.VolumeTemplate, error)
+	GetStorageDrivers() ([]rancherClient.StorageDriver, error)
 }
 
 type client struct {
@@ -273,4 +278,43 @@ func (m *client) GetNetworks() ([]Network, error) {
 	}
 
 	return networks, nil
+}
+
+func (m *client) GetVolumes() ([]rancherClient.Volume, error) {
+	resp, err := m.SendRequest("/volumes")
+	var volumes []rancherClient.Volume
+	if err != nil {
+		return volumes, err
+	}
+
+	if err = json.Unmarshal(resp, &volumes); err != nil {
+		return volumes, err
+	}
+	return volumes, nil
+}
+
+func (m *client) GetVolumeTemplates() ([]rancherClient.VolumeTemplate, error) {
+	resp, err := m.SendRequest("/volumetemplates")
+	var volumeTemplates []rancherClient.VolumeTemplate
+	if err != nil {
+		return volumeTemplates, err
+	}
+
+	if err = json.Unmarshal(resp, &volumeTemplates); err != nil {
+		return volumeTemplates, err
+	}
+	return volumeTemplates, nil
+}
+
+func (m *client) GetStorageDrivers() ([]rancherClient.StorageDriver, error) {
+	resp, err := m.SendRequest("/storagedrivers")
+	var storageDrivers []rancherClient.StorageDriver
+	if err != nil {
+		return storageDrivers, err
+	}
+
+	if err = json.Unmarshal(resp, &storageDrivers); err != nil {
+		return storageDrivers, err
+	}
+	return storageDrivers, nil
 }

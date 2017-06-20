@@ -9,7 +9,7 @@ import (
 
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
-	"github.com/rancher/kattle/sync"
+	"github.com/rancherlabs/kattle/sync"
 	"github.com/urfave/cli"
 )
 

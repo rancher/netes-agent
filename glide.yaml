@@ -1,0 +1,10 @@
+package: github.com/rancher/kattle
+import:
+- package: k8s.io/client-go
+  version: v3.0.0-beta.0
+- package: github.com/rancher/go-rancher
+  version: 67eba3ff03e67e5b845ffba7278ddf5f95c10ad4
+  repo: https://github.com/joshwget/go-rancher
+- package: github.com/rancher/go-rancher-metadata
+  version: 23bf860406d4d06cee3739d0873fed237462bb28
+  repo: https://github.com/joshwget/go-rancher-metadata

@@ -71,6 +71,10 @@ func action(c *cli.Context) error {
 	//})
 
 	watch.Pods(clientset)
+	watch.Pvs(clientset)
+	watch.Pvcs(clientset)
+
+	time.Sleep(5 * time.Second)
 
 	for {
 		deploymentUnits, err := m.GetDeploymentUnits()

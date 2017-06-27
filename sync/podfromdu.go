@@ -11,6 +11,7 @@ import (
 
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancherlabs/kattle/labels"
 )
 
 func PodFromDeploymentUnit(deploymentUnit metadata.DeploymentUnit) v1.Pod {
@@ -27,7 +28,7 @@ func PodFromDeploymentUnit(deploymentUnit metadata.DeploymentUnit) v1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: deploymentUnit.Uuid,
 			Labels: map[string]string{
-				revisionLabel: deploymentUnit.RevisionId,
+				labels.RevisionLabel: deploymentUnit.RevisionId,
 			},
 		},
 		Spec: podSpec,
@@ -145,8 +146,8 @@ func getSecurityContext(container client.Container) *v1.SecurityContext {
 
 func getNodeSelector(config client.LaunchConfig) map[string]string {
 	var hostAffinityLabelMap map[string]string
-	if label, ok := config.Labels[hostAffinityLabel]; ok {
-		hostAffinityLabelMap = ParseLabel(label)
+	if label, ok := config.Labels[labels.HostAffinityLabel]; ok {
+		hostAffinityLabelMap = labels.Parse(label)
 	}
 	return hostAffinityLabelMap
 }

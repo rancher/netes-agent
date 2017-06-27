@@ -11,6 +11,16 @@ type DeploymentUnit struct {
 	Host       rancherClient.Host
 }
 
+type Volume struct {
+	rancherClient.Volume
+	Metadata map[string]interface{}
+}
+
+type VolumeTemplate struct {
+	rancherClient.VolumeTemplate
+	Metadata map[string]interface{}
+}
+
 type Stack struct {
 	EnvironmentName string    `json:"environment_name"`
 	EnvironmentUUID string    `json:"environment_uuid"`

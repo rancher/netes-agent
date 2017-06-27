@@ -1,5 +1,5 @@
-hash: 39842f0031243b5ffbfde1186da70d14a6a4c89383c841bb6579763f00afc182
-updated: 2017-06-20T12:07:18.651475536-07:00
+hash: b16a74938f224572d210c009c2f7119349dc903d4bf46335fc263f20c10def1c
+updated: 2017-06-27T08:47:56.81229445-07:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -61,7 +61,7 @@ imports:
   subpackages:
   - v2
 - name: github.com/rancher/go-rancher-metadata
-  version: 23bf860406d4d06cee3739d0873fed237462bb28
+  version: a20c9a6220f2c53bc93ad591c9604cf6727ebb3c
   repo: https://github.com/joshwget/go-rancher-metadata
   subpackages:
   - metadata
@@ -74,7 +74,7 @@ imports:
   subpackages:
   - codec
 - name: github.com/urfave/cli
-  version: cf33a9befefdd6c6ea1a236ab6d546e797a62cbf
+  version: b892ba3809cd07fcf2b064e166b0c2e16e0147bd
 - name: golang.org/x/net
   version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
@@ -219,6 +219,7 @@ imports:
   - pkg/version
   - rest
   - rest/watch
+  - tools/cache
   - tools/clientcmd/api
   - tools/metrics
   - transport

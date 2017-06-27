@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,6 +172,7 @@ func getEnvironment(container client.Container) []v1.EnvVar {
 
 func getVolumes(deploymentUnit metadata.DeploymentUnit) []v1.Volume {
 	var volumes []v1.Volume
+
 	for _, container := range deploymentUnit.Containers {
 		for _, volume := range container.DataVolumes {
 			split := strings.SplitN(volume, ":", -1)
@@ -180,8 +182,12 @@ func getVolumes(deploymentUnit metadata.DeploymentUnit) []v1.Volume {
 
 			hostPath := split[0]
 
+			if !filepath.IsAbs(hostPath) {
+				continue
+			}
+
 			volumes = append(volumes, v1.Volume{
-				Name: createVolumeName(hostPath),
+				Name: createBindMountVolumeName(hostPath),
 				VolumeSource: v1.VolumeSource{
 					HostPath: &v1.HostPathVolumeSource{
 						Path: hostPath,
@@ -190,11 +196,27 @@ func getVolumes(deploymentUnit metadata.DeploymentUnit) []v1.Volume {
 			})
 		}
 	}
+
+	for _, container := range deploymentUnit.Containers {
+		for _, mount := range container.Mounts {
+			volumeName := getVolumeName(mount.VolumeName)
+			volumes = append(volumes, v1.Volume{
+				Name: volumeName,
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: volumeName,
+					},
+				},
+			})
+		}
+	}
+
 	return volumes
 }
 
 func getVolumeMounts(container client.Container) []v1.VolumeMount {
 	var volumeMounts []v1.VolumeMount
+
 	for _, volume := range container.DataVolumes {
 		split := strings.SplitN(volume, ":", -1)
 		if len(split) < 2 {
@@ -204,15 +226,27 @@ func getVolumeMounts(container client.Container) []v1.VolumeMount {
 		hostPath := split[0]
 		containerPath := split[1]
 
+		if !filepath.IsAbs(hostPath) {
+			continue
+		}
+
 		volumeMounts = append(volumeMounts, v1.VolumeMount{
-			Name:      createVolumeName(hostPath),
+			Name:      createBindMountVolumeName(hostPath),
 			MountPath: containerPath,
 		})
 	}
+
+	for _, mount := range container.Mounts {
+		volumeMounts = append(volumeMounts, v1.VolumeMount{
+			Name:      getVolumeName(mount.VolumeName),
+			MountPath: mount.Path,
+		})
+	}
+
 	return volumeMounts
 }
 
-func createVolumeName(path string) string {
+func createBindMountVolumeName(path string) string {
 	path = strings.TrimLeft(path, "/")
 	path = strings.Replace(path, "/", "-", -1)
 	return fmt.Sprintf("%s-%s", path, "volume")

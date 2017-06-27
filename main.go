@@ -10,6 +10,7 @@ import (
 	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancherlabs/kattle/sync"
+	"github.com/rancherlabs/kattle/watch"
 	"github.com/urfave/cli"
 )
 
@@ -69,6 +70,8 @@ func action(c *cli.Context) error {
 	}*/
 	//})
 
+	watch.Pods(clientset)
+
 	for {
 		deploymentUnits, err := m.GetDeploymentUnits()
 		if err != nil {
@@ -78,15 +81,7 @@ func action(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		volumeDrivers, err := m.GetVolumeTemplates()
-		if err != nil {
-			return err
-		}
-		storageDrivers, err := m.GetStorageDrivers()
-		if err != nil {
-			return err
-		}
-		if err = sync.Sync(clientset, deploymentUnits, volumes, volumeDrivers, storageDrivers); err != nil {
+		if err = sync.Sync(clientset, deploymentUnits, volumes); err != nil {
 			return err
 		}
 		time.Sleep(2 * time.Second)

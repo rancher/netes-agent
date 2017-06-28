@@ -8,7 +8,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func reconcileVolumes(clientset *kubernetes.Clientset, volumes []metadata.Volume, volumesIds map[string]bool) error {
+func reconcileVolumes(clientset *kubernetes.Clientset, watchClient *watch.Client, volumes []metadata.Volume, volumesIds map[string]bool) error {
 	for _, volume := range volumes {
 		if _, ok := volumesIds[volume.Id]; !ok {
 			continue
@@ -28,14 +28,14 @@ func reconcileVolumes(clientset *kubernetes.Clientset, volumes []metadata.Volume
 			}
 
 			pv := PvFromVolume(volume)
-			if _, ok := watch.PvCache[pv.Name]; !ok {
+			if _, ok := watchClient.Pvs()[pv.Name]; !ok {
 				if err := createPv(clientset, pv); err != nil {
 					log.Error(err)
 				}
 			}
 
 			pvc := PvcFromVolume(volume)
-			if _, ok := watch.PvcCache[pvc.Name]; !ok {
+			if _, ok := watchClient.Pvcs()[pvc.Name]; !ok {
 				if err := createPvc(clientset, pvc); err != nil {
 					log.Error(err)
 				}

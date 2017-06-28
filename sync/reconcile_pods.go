@@ -9,11 +9,11 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func reconcilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
+func reconcilePods(clientset *kubernetes.Clientset, watchClient *watch.Client, pods []v1.Pod) error {
 	for _, pod := range pods {
 		go func(pod v1.Pod) {
 			revision := pod.Labels[labels.RevisionLabel]
-			existingPod, ok := watch.PodCache[pod.Name]
+			existingPod, ok := watchClient.Pods()[pod.Name]
 			if ok {
 				if existingRevision, ok := existingPod.Labels[labels.RevisionLabel]; ok {
 					if revision != existingRevision {
@@ -36,7 +36,7 @@ func reconcilePods(clientset *kubernetes.Clientset, pods []v1.Pod) error {
 		podNames[pod.Name] = true
 	}
 
-	for _, pod := range watch.PodCache {
+	for _, pod := range watchClient.Pods() {
 		func(pod v1.Pod) {
 			if _, ok := podNames[pod.Name]; !ok {
 				log.Infof("Pod %s shouldn't exist", pod.Name)

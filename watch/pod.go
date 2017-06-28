@@ -3,35 +3,31 @@ package watch
 import (
 	"time"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/rancher/go-rancher/v2"
 	"github.com/rancherlabs/kattle/labels"
+	"github.com/rancherlabs/kattle/publish"
 
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
-var (
-	PodCache map[string]v1.Pod
-)
-
-func Pods(clientset *kubernetes.Clientset) chan struct{} {
-	PodCache = map[string]v1.Pod{}
-
-	watchlist := cache.NewListWatchFromClient(clientset.Core().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
+func (c *Client) startPodWatch() chan struct{} {
+	watchlist := cache.NewListWatchFromClient(c.clientset.Core().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Pod{},
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: podFilterAddDelete(func(pod v1.Pod) {
-				PodCache[pod.Name] = pod
+			AddFunc: podFilterAddDelete(c.rancherClient, func(pod v1.Pod) {
+				c.pods[pod.Name] = pod
 			}),
-			DeleteFunc: podFilterAddDelete(func(pod v1.Pod) {
-				delete(PodCache, pod.Name)
+			DeleteFunc: podFilterAddDelete(c.rancherClient, func(pod v1.Pod) {
+				delete(c.pods, pod.Name)
 			}),
-			UpdateFunc: podFilterUpdate(func(pod v1.Pod) {
-				PodCache[pod.Name] = pod
+			UpdateFunc: podFilterUpdate(c.rancherClient, func(pod v1.Pod) {
+				c.pods[pod.Name] = pod
 			}),
 		},
 	)
@@ -42,17 +38,20 @@ func Pods(clientset *kubernetes.Clientset) chan struct{} {
 	return stop
 }
 
-func podFilterAddDelete(f func(v1.Pod)) func(interface{}) {
+func podFilterAddDelete(rancherClient *client.RancherClient, f func(v1.Pod)) func(interface{}) {
 	return func(obj interface{}) {
 		pod := obj.(*v1.Pod)
+		if err := publish.Pod(rancherClient, *pod); err != nil {
+			log.Errorf("Failed to publish reply for pod %s: %v", pod.Name, err)
+		}
 		if _, ok := pod.Labels[labels.RevisionLabel]; ok {
 			f(*pod)
 		}
 	}
 }
 
-func podFilterUpdate(f func(v1.Pod)) func(interface{}, interface{}) {
+func podFilterUpdate(rancherClient *client.RancherClient, f func(v1.Pod)) func(interface{}, interface{}) {
 	return func(oldObj, newObj interface{}) {
-		podFilterAddDelete(f)(newObj)
+		podFilterAddDelete(rancherClient, f)(newObj)
 	}
 }

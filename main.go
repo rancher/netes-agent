@@ -48,10 +48,10 @@ func main() {
 }
 
 func action(c *cli.Context) error {
-	/*rancherClient, err := createRancherClient()
+	rancherClient, err := createRancherClient()
 	if err != nil {
 		return err
-	}*/
+	}
 
 	kubernetesURL := c.String("kubernetes-master")
 	username := c.String("username")
@@ -70,9 +70,8 @@ func action(c *cli.Context) error {
 	}*/
 	//})
 
-	watch.Pods(clientset)
-	watch.Pvs(clientset)
-	watch.Pvcs(clientset)
+	watchClient := watch.NewClient(rancherClient, clientset)
+	watchClient.Start()
 
 	time.Sleep(5 * time.Second)
 
@@ -85,7 +84,7 @@ func action(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		if err = sync.Sync(clientset, deploymentUnits, volumes); err != nil {
+		if err = sync.Sync(clientset, watchClient, deploymentUnits, volumes); err != nil {
 			return err
 		}
 		time.Sleep(2 * time.Second)

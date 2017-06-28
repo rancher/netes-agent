@@ -2,11 +2,12 @@ package sync
 
 import (
 	"github.com/rancher/go-rancher-metadata/metadata"
+	"github.com/rancherlabs/kattle/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func Sync(clientset *kubernetes.Clientset, deploymentUnits []metadata.DeploymentUnit, volumes []metadata.Volume) error {
+func Sync(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnits []metadata.DeploymentUnit, volumes []metadata.Volume) error {
 	var pods []v1.Pod
 	for _, deploymentUnit := range deploymentUnits {
 		pods = append(pods, PodFromDeploymentUnit(deploymentUnit))
@@ -21,9 +22,9 @@ func Sync(clientset *kubernetes.Clientset, deploymentUnits []metadata.Deployment
 		}
 	}
 
-	if err := reconcileVolumes(clientset, volumes, volumeIds); err != nil {
+	if err := reconcileVolumes(clientset, watchClient, volumes, volumeIds); err != nil {
 		return err
 	}
 
-	return reconcilePods(clientset, pods)
+	return reconcilePods(clientset, watchClient, pods)
 }

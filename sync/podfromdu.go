@@ -52,19 +52,8 @@ func getContainer(container client.Container) v1.Container {
 }
 
 func getPodSpec(deploymentUnit metadata.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
-	var restartPolicy v1.RestartPolicy
-	if config.RestartPolicy != nil {
-		switch config.RestartPolicy.Name {
-		case "no":
-			restartPolicy = v1.RestartPolicyNever
-		case "on-failure":
-			restartPolicy = v1.RestartPolicyOnFailure
-		case "always":
-			restartPolicy = v1.RestartPolicyAlways
-		}
-	}
 	return v1.PodSpec{
-		RestartPolicy: restartPolicy,
+		RestartPolicy: v1.RestartPolicyNever,
 		HostIPC:       config.IpcMode == "host",
 		HostNetwork:   config.NetworkMode == "host",
 		HostPID:       config.PidMode == "host",

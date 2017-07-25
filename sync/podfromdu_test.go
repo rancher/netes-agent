@@ -20,7 +20,7 @@ func TestGetPodSpec(t *testing.T) {
 		NetworkMode: "host",
 		PidMode:     "host",
 	}), v1.PodSpec{
-		RestartPolicy: v1.RestartPolicyAlways,
+		RestartPolicy: v1.RestartPolicyNever,
 		HostIPC:       true,
 		HostNetwork:   true,
 		HostPID:       true,

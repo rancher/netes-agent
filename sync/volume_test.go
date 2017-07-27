@@ -7,13 +7,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancherlabs/kattle/types"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	testVolume = metadata.Volume{
+	testVolume = types.Volume{
 		Volume: client.Volume{
 			Name: "v",
 		},

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rancher/go-rancher-metadata/metadata"
+	"github.com/rancherlabs/kattle/types"
 	"github.com/rancherlabs/kattle/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +16,7 @@ type VolumeSpec struct {
 	Raw  v1.PersistentVolumeSpec `json:",inline"`
 }
 
-func PvFromVolume(volume metadata.Volume) v1.PersistentVolume {
+func PvFromVolume(volume types.Volume) v1.PersistentVolume {
 	volumeSpec := readVolumeSpec(volume)
 
 	volumeName := getVolumeName(volume.Name)
@@ -41,7 +41,7 @@ func PvFromVolume(volume metadata.Volume) v1.PersistentVolume {
 	return pv
 }
 
-func PvcFromVolume(volume metadata.Volume) v1.PersistentVolumeClaim {
+func PvcFromVolume(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeSpec := readVolumeSpec(volume)
 
 	volumeName := getVolumeName(volume.Name)
@@ -73,7 +73,7 @@ func getVolumeName(volume string) string {
 	return strings.Replace(volume, "_", "-", -1)
 }
 
-func readVolumeSpec(volume metadata.Volume) VolumeSpec {
+func readVolumeSpec(volume types.Volume) VolumeSpec {
 	var raw v1.PersistentVolumeSpec
 	if err := utils.ConvertByJSON(volume.Metadata, &raw); err != nil {
 		// TODO

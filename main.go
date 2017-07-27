@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancherlabs/kattle/sync"
+	"github.com/rancherlabs/kattle/types"
 	"github.com/rancherlabs/kattle/watch"
 	"github.com/urfave/cli"
 )
@@ -18,6 +19,11 @@ const (
 	cattleURLEnv          = "CATTLE_URL"
 	cattleURLAccessKeyEnv = "CATTLE_ACCESS_KEY"
 	cattleURLSecretKeyEnv = "CATTLE_SECRET_KEY"
+)
+
+var (
+	deploymentUnitsCache []types.DeploymentUnit
+	volumesCache         []types.Volume
 )
 
 var VERSION = "v0.0.0-dev"
@@ -38,7 +44,7 @@ func main() {
 			Name: "password",
 		},
 		cli.StringFlag{
-			Name: "metadata-url",
+			Name: "token",
 		},
 	}
 	app.Action = action
@@ -56,19 +62,11 @@ func action(c *cli.Context) error {
 	kubernetesURL := c.String("kubernetes-master")
 	username := c.String("username")
 	password := c.String("password")
-	clientset, err := createKubernetesClient(kubernetesURL, username, password)
+	token := c.String("token")
+	clientset, err := createKubernetesClient(kubernetesURL, username, password, token)
 	if err != nil {
 		return err
 	}
-
-	metadataURL := c.String("metadata-url")
-	m := metadata.NewClient(metadataURL)
-
-	//return m.OnChangeWithError(5, func(_ string) {
-	/*if err := sync.Sync(m, rancherClient, kubernernetesClient); err != nil {
-		logrus.Errorf("Sync failed: %v", err)
-	}*/
-	//})
 
 	watchClient := watch.NewClient(rancherClient, clientset)
 	watchClient.Start()
@@ -76,15 +74,13 @@ func action(c *cli.Context) error {
 	time.Sleep(5 * time.Second)
 
 	for {
-		deploymentUnits, err := m.GetDeploymentUnits()
-		if err != nil {
-			return err
+		if err := updateDeploymentUnits(rancherClient); err != nil {
+			fmt.Printf("Failed to update deployment units: %v", err)
 		}
-		volumes, err := m.GetVolumes()
-		if err != nil {
-			return err
+		if err := updateVolumes(rancherClient); err != nil {
+			fmt.Printf("Failed to update volumes: %v", err)
 		}
-		if err = sync.Sync(clientset, watchClient, deploymentUnits, volumes); err != nil {
+		if err = sync.Sync(clientset, watchClient, deploymentUnitsCache, volumesCache); err != nil {
 			return err
 		}
 		time.Sleep(2 * time.Second)
@@ -103,13 +99,93 @@ func createRancherClient() (*client.RancherClient, error) {
 	})
 }
 
-func createKubernetesClient(url, username, password string) (*kubernetes.Clientset, error) {
+func createKubernetesClient(url, username, password, token string) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(&rest.Config{
-		Host:     url,
-		Username: username,
-		Password: password,
+		Host:        url,
+		Username:    username,
+		Password:    password,
+		BearerToken: token,
 		TLSClientConfig: rest.TLSClientConfig{
 			Insecure: true,
 		},
 	})
+}
+
+func updateDeploymentUnits(rancherClient *client.RancherClient) error {
+	var newDeploymentUnitsCache []types.DeploymentUnit
+
+	deploymentUnits, err := rancherClient.DeploymentUnit.List(&client.ListOpts{})
+	if err != nil {
+		return err
+	}
+	containers, err := rancherClient.Container.List(&client.ListOpts{
+		Filters: map[string]interface{}{
+			"state": "running",
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	containersMap := map[string][]client.Container{}
+	for _, container := range containers.Data {
+		if _, ok := container.Labels["io.rancher.kattle"]; !ok {
+			continue
+		}
+
+		if _, ok := containersMap[container.DeploymentUnitId]; ok {
+			containersMap[container.DeploymentUnitId] = append(containersMap[container.DeploymentUnitId], container)
+		} else {
+			containersMap[container.DeploymentUnitId] = []client.Container{
+				container,
+			}
+		}
+	}
+
+	for _, deploymentUnit := range deploymentUnits.Data {
+		deploymentUnitContainers, ok := containersMap[deploymentUnit.Id]
+		if !ok {
+			continue
+		}
+
+		revision, err := rancherClient.Revision.ById(deploymentUnit.RevisionId)
+		if err != nil {
+			return err
+		}
+
+		deploymentUnit := types.DeploymentUnit{
+			DeploymentUnit: deploymentUnit,
+			Containers:     deploymentUnitContainers,
+		}
+		if revision != nil {
+			deploymentUnit.Revision = *revision
+		}
+
+		newDeploymentUnitsCache = append(newDeploymentUnitsCache, deploymentUnit)
+	}
+
+	deploymentUnitsCache = newDeploymentUnitsCache
+
+	return nil
+}
+
+func updateVolumes(rancherClient *client.RancherClient) error {
+	volumes, err := rancherClient.Volume.List(&client.ListOpts{
+		Filters: map[string]interface{}{},
+	})
+	if err != nil {
+		return err
+	}
+
+	if volumes != nil {
+		var metadataVolumes []types.Volume
+		for _, volume := range volumes.Data {
+			metadataVolumes = append(metadataVolumes, types.Volume{
+				Volume: volume,
+			})
+		}
+		volumesCache = metadataVolumes
+	}
+
+	return nil
 }

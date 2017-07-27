@@ -6,13 +6,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancherlabs/kattle/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPodSpec(t *testing.T) {
-	assert.Equal(t, getPodSpec(metadata.DeploymentUnit{}, client.LaunchConfig{
+	assert.Equal(t, getPodSpec(types.DeploymentUnit{}, client.LaunchConfig{
 		RestartPolicy: &client.RestartPolicy{
 			Name: "always",
 		},
@@ -98,7 +98,7 @@ func TestSecurityContext(t *testing.T) {
 }
 
 func TestGetVolumes(t *testing.T) {
-	assert.Equal(t, getVolumes(metadata.DeploymentUnit{
+	assert.Equal(t, getVolumes(types.DeploymentUnit{
 		Containers: []client.Container{
 			client.Container{
 				DataVolumes: []string{
@@ -116,7 +116,7 @@ func TestGetVolumes(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, len(getVolumes(metadata.DeploymentUnit{
+	assert.Equal(t, len(getVolumes(types.DeploymentUnit{
 		Containers: []client.Container{
 			client.Container{
 				DataVolumes: []string{

@@ -2,19 +2,19 @@ package sync
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/rancher/go-rancher-metadata/metadata"
+	"github.com/rancherlabs/kattle/types"
 	"github.com/rancherlabs/kattle/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func reconcileVolumes(clientset *kubernetes.Clientset, watchClient *watch.Client, volumes []metadata.Volume, volumesIds map[string]bool) error {
+func reconcileVolumes(clientset *kubernetes.Clientset, watchClient *watch.Client, volumes []types.Volume, volumesIds map[string]bool) error {
 	for _, volume := range volumes {
 		if _, ok := volumesIds[volume.Id]; !ok {
 			continue
 		}
 
-		go func(volume metadata.Volume) {
+		go func(volume types.Volume) {
 			// TODO: remove these hard-coded values
 			volume.Metadata = map[string]interface{}{
 				"accessModes": []string{

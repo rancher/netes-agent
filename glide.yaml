@@ -5,6 +5,3 @@ import:
 - package: github.com/rancher/go-rancher
   version: 67eba3ff03e67e5b845ffba7278ddf5f95c10ad4
   repo: https://github.com/joshwget/go-rancher
-- package: github.com/rancher/go-rancher-metadata
-  version: a20c9a6220f2c53bc93ad591c9604cf6727ebb3c
-  repo: https://github.com/joshwget/go-rancher-metadata

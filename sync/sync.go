@@ -1,13 +1,13 @@
 package sync
 
 import (
-	"github.com/rancher/go-rancher-metadata/metadata"
+	"github.com/rancherlabs/kattle/types"
 	"github.com/rancherlabs/kattle/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func Sync(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnits []metadata.DeploymentUnit, volumes []metadata.Volume) error {
+func Sync(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnits []types.DeploymentUnit, volumes []types.Volume) error {
 	var pods []v1.Pod
 	for _, deploymentUnit := range deploymentUnits {
 		pods = append(pods, PodFromDeploymentUnit(deploymentUnit))

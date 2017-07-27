@@ -9,12 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"github.com/rancher/go-rancher-metadata/metadata"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancherlabs/kattle/labels"
+	"github.com/rancherlabs/kattle/types"
 )
 
-func PodFromDeploymentUnit(deploymentUnit metadata.DeploymentUnit) v1.Pod {
+func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 	var containers []v1.Container
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
@@ -51,7 +51,7 @@ func getContainer(container client.Container) v1.Container {
 	}
 }
 
-func getPodSpec(deploymentUnit metadata.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
+func getPodSpec(deploymentUnit types.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
 		HostIPC:       config.IpcMode == "host",
@@ -160,7 +160,7 @@ func getEnvironment(container client.Container) []v1.EnvVar {
 	return environment
 }
 
-func getVolumes(deploymentUnit metadata.DeploymentUnit) []v1.Volume {
+func getVolumes(deploymentUnit types.DeploymentUnit) []v1.Volume {
 	var volumes []v1.Volume
 
 	for _, container := range deploymentUnit.Containers {

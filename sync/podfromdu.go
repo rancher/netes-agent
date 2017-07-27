@@ -14,8 +14,16 @@ import (
 	"github.com/rancherlabs/kattle/types"
 )
 
+var (
+	rancherPauseContainer = v1.Container{
+		Name: "rancher-pause",
+		// TODO: figure out where to read this so it's not hard-coded
+		Image: "gcr.io/google_containers/pause-amd64:3.0",
+	}
+)
+
 func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
-	var containers []v1.Container
+	containers := []v1.Container{rancherPauseContainer}
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
 	}

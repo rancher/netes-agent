@@ -158,7 +158,7 @@ func updateDeploymentUnits(rancherClient *client.RancherClient) error {
 			Containers:     deploymentUnitContainers,
 		}
 		if revision != nil {
-			deploymentUnit.Revision = *revision
+			deploymentUnit.Revision = revision.Id
 		}
 
 		newDeploymentUnitsCache = append(newDeploymentUnitsCache, deploymentUnit)

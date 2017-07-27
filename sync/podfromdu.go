@@ -28,8 +28,7 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 		containers = append(containers, getContainer(container))
 	}
 
-	primaryConfig := deploymentUnit.Revision.Config.LaunchConfig
-	podSpec := getPodSpec(deploymentUnit, *primaryConfig)
+	podSpec := getPodSpec(deploymentUnit)
 	podSpec.Containers = containers
 
 	return v1.Pod{
@@ -59,15 +58,15 @@ func getContainer(container client.Container) v1.Container {
 	}
 }
 
-func getPodSpec(deploymentUnit types.DeploymentUnit, config client.LaunchConfig) v1.PodSpec {
+func getPodSpec(deploymentUnit types.DeploymentUnit) v1.PodSpec {
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
-		HostIPC:       config.IpcMode == "host",
-		HostNetwork:   config.NetworkMode == "host",
-		HostPID:       config.PidMode == "host",
+		HostIPC:       deploymentUnit.Primary().IpcMode == "host",
+		HostNetwork:   deploymentUnit.Primary().NetworkMode == "host",
+		HostPID:       deploymentUnit.Primary().PidMode == "host",
 		DNSPolicy:     v1.DNSDefault,
 		NodeName:      deploymentUnit.Host.Name,
-		NodeSelector:  getNodeSelector(config),
+		NodeSelector:  getNodeSelector(deploymentUnit.Primary()),
 		Volumes:       getVolumes(deploymentUnit),
 	}
 }
@@ -141,9 +140,9 @@ func getSecurityContext(container client.Container) *v1.SecurityContext {
 	}
 }
 
-func getNodeSelector(config client.LaunchConfig) map[string]string {
+func getNodeSelector(container client.Container) map[string]string {
 	var hostAffinityLabelMap map[string]string
-	if label, ok := config.Labels[labels.HostAffinityLabel]; ok {
+	if label, ok := container.Labels[labels.HostAffinityLabel]; ok {
 		hostAffinityLabelMap = labels.Parse(label)
 	}
 	return hostAffinityLabelMap

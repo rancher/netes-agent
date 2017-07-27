@@ -12,13 +12,17 @@ import (
 )
 
 func TestGetPodSpec(t *testing.T) {
-	assert.Equal(t, getPodSpec(types.DeploymentUnit{}, client.LaunchConfig{
-		RestartPolicy: &client.RestartPolicy{
-			Name: "always",
+	assert.Equal(t, getPodSpec(types.DeploymentUnit{
+		Containers: []client.Container{
+			client.Container{
+				RestartPolicy: &client.RestartPolicy{
+					Name: "always",
+				},
+				IpcMode:     "host",
+				NetworkMode: "host",
+				PidMode:     "host",
+			},
 		},
-		IpcMode:     "host",
-		NetworkMode: "host",
-		PidMode:     "host",
 	}), v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
 		HostIPC:       true,

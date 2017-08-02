@@ -1,18 +1,6 @@
 package sync
 
-import (
-	"testing"
-
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-
-	"github.com/rancher/go-rancher/v2"
-	"github.com/rancherlabs/kattle/types"
-	"github.com/stretchr/testify/assert"
-)
-
-var (
+/*var (
 	testVolume = types.Volume{
 		Volume: client.Volume{
 			Name: "v",
@@ -70,4 +58,4 @@ func TestPvcFromVolume(t *testing.T) {
 			},
 		},
 	})
-}
+}*/

@@ -9,20 +9,32 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/go-rancher/v3"
 	"github.com/rancherlabs/kattle/labels"
-	"github.com/rancherlabs/kattle/types"
+)
+
+// TODO: move this
+func Primary(d client.DeploymentSyncRequest) client.Container {
+	if len(d.Containers) > -0 {
+		return d.Containers[0]
+	}
+	return client.Container{}
+}
+
+const (
+	rancherPauseContainerName = "rancher-pause"
+	hostNetworkingKind        = "dockerHost"
 )
 
 var (
 	rancherPauseContainer = v1.Container{
-		Name: "rancher-pause",
+		Name: rancherPauseContainerName,
 		// TODO: figure out where to read this so it's not hard-coded
 		Image: "gcr.io/google_containers/pause-amd64:3.0",
 	}
 )
 
-func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
+func PodFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 	containers := []v1.Container{rancherPauseContainer}
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
@@ -33,9 +45,9 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploymentUnit.Uuid,
+			Name: deploymentUnit.DeploymentUnitUuid,
 			Labels: map[string]string{
-				labels.RevisionLabel: deploymentUnit.RevisionId,
+				labels.RevisionLabel: deploymentUnit.Revision,
 			},
 		},
 		Spec: podSpec,
@@ -45,7 +57,7 @@ func PodFromDeploymentUnit(deploymentUnit types.DeploymentUnit) v1.Pod {
 func getContainer(container client.Container) v1.Container {
 	return v1.Container{
 		Name:            container.Uuid,
-		Image:           getImage(container),
+		Image:           container.Image,
 		Command:         container.EntryPoint,
 		Args:            container.Command,
 		TTY:             container.Tty,
@@ -58,17 +70,28 @@ func getContainer(container client.Container) v1.Container {
 	}
 }
 
-func getPodSpec(deploymentUnit types.DeploymentUnit) v1.PodSpec {
+func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
-		HostIPC:       deploymentUnit.Primary().IpcMode == "host",
-		HostNetwork:   deploymentUnit.Primary().NetworkMode == "host",
-		HostPID:       deploymentUnit.Primary().PidMode == "host",
+		HostNetwork:   getHostNetwork(deploymentUnit),
+		HostIPC:       Primary(deploymentUnit).IpcMode == "host",
+		HostPID:       Primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:     v1.DNSDefault,
-		NodeName:      deploymentUnit.Host.Name,
-		NodeSelector:  getNodeSelector(deploymentUnit.Primary()),
-		Volumes:       getVolumes(deploymentUnit),
+		// TODO
+		//NodeName:      deploymentUnit.Host.Name,
+		NodeSelector: getNodeSelector(Primary(deploymentUnit)),
+		Volumes:      getVolumes(deploymentUnit),
 	}
+}
+
+func getHostNetwork(deploymentUnit client.DeploymentSyncRequest) bool {
+	networkId := Primary(deploymentUnit).PrimaryNetworkId
+	for _, network := range deploymentUnit.Networks {
+		if network.Id == networkId && network.Kind == hostNetworkingKind {
+			return true
+		}
+	}
+	return false
 }
 
 func getLivenessProbe(container client.Container) *v1.Probe {
@@ -148,14 +171,6 @@ func getNodeSelector(container client.Container) map[string]string {
 	return hostAffinityLabelMap
 }
 
-func getImage(container client.Container) string {
-	split := strings.SplitN(container.ImageUuid, ":", 2)
-	if len(split) > 1 {
-		return split[1]
-	}
-	return ""
-}
-
 func getEnvironment(container client.Container) []v1.EnvVar {
 	var environment []v1.EnvVar
 	for k, v := range container.Environment {
@@ -167,7 +182,7 @@ func getEnvironment(container client.Container) []v1.EnvVar {
 	return environment
 }
 
-func getVolumes(deploymentUnit types.DeploymentUnit) []v1.Volume {
+func getVolumes(deploymentUnit client.DeploymentSyncRequest) []v1.Volume {
 	var volumes []v1.Volume
 
 	for _, container := range deploymentUnit.Containers {

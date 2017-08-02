@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -9,21 +8,17 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/rancher/go-rancher/v2"
-	"github.com/rancherlabs/kattle/sync"
-	"github.com/rancherlabs/kattle/types"
+	"github.com/rancherlabs/kattle/events"
+	"github.com/rancherlabs/kattle/handlers"
+	"github.com/rancherlabs/kattle/hostname"
 	"github.com/rancherlabs/kattle/watch"
 	"github.com/urfave/cli"
 )
 
 const (
-	cattleURLEnv          = "CATTLE_URL"
-	cattleURLAccessKeyEnv = "CATTLE_ACCESS_KEY"
-	cattleURLSecretKeyEnv = "CATTLE_SECRET_KEY"
-)
-
-var (
-	deploymentUnitsCache []types.DeploymentUnit
-	volumesCache         []types.Volume
+	cattleURLEnv       = "CATTLE_URL"
+	cattleAccessKeyEnv = "CATTLE_ACCESS_KEY"
+	cattleSecretKeyEnv = "CATTLE_SECRET_KEY"
 )
 
 var VERSION = "v0.0.0-dev"
@@ -59,6 +54,9 @@ func action(c *cli.Context) error {
 		return err
 	}
 
+	// TODO: this is bad
+	hostname.RancherClient = rancherClient
+
 	kubernetesURL := c.String("kubernetes-master")
 	username := c.String("username")
 	password := c.String("password")
@@ -68,23 +66,19 @@ func action(c *cli.Context) error {
 		return err
 	}
 
-	watchClient := watch.NewClient(rancherClient, clientset)
+	watchClient := watch.NewClient(clientset)
 	watchClient.Start()
 
 	time.Sleep(5 * time.Second)
 
-	for {
-		if err := updateDeploymentUnits(rancherClient); err != nil {
-			fmt.Printf("Failed to update deployment units: %v", err)
-		}
-		if err := updateVolumes(rancherClient); err != nil {
-			fmt.Printf("Failed to update volumes: %v", err)
-		}
-		if err = sync.Sync(clientset, watchClient, deploymentUnitsCache, volumesCache); err != nil {
-			return err
-		}
-		time.Sleep(2 * time.Second)
-	}
+	handlers.WatchClient = watchClient
+	handlers.Clientset = clientset
+
+	cattleURL := os.Getenv(cattleURLEnv)
+	cattleAccessKey := os.Getenv(cattleAccessKeyEnv)
+	cattleSecretKey := os.Getenv(cattleSecretKeyEnv)
+
+	return events.Listen(cattleURL, cattleAccessKey, cattleSecretKey, 250)
 }
 
 func createRancherClient() (*client.RancherClient, error) {
@@ -94,8 +88,8 @@ func createRancherClient() (*client.RancherClient, error) {
 	}
 	return client.NewRancherClient(&client.ClientOpts{
 		Url:       url,
-		AccessKey: os.Getenv(cattleURLAccessKeyEnv),
-		SecretKey: os.Getenv(cattleURLSecretKeyEnv),
+		AccessKey: os.Getenv(cattleAccessKeyEnv),
+		SecretKey: os.Getenv(cattleSecretKeyEnv),
 	})
 }
 
@@ -109,83 +103,4 @@ func createKubernetesClient(url, username, password, token string) (*kubernetes.
 			Insecure: true,
 		},
 	})
-}
-
-func updateDeploymentUnits(rancherClient *client.RancherClient) error {
-	var newDeploymentUnitsCache []types.DeploymentUnit
-
-	deploymentUnits, err := rancherClient.DeploymentUnit.List(&client.ListOpts{})
-	if err != nil {
-		return err
-	}
-	containers, err := rancherClient.Container.List(&client.ListOpts{
-		Filters: map[string]interface{}{
-			"state": "running",
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	containersMap := map[string][]client.Container{}
-	for _, container := range containers.Data {
-		if _, ok := container.Labels["io.rancher.kattle"]; !ok {
-			continue
-		}
-
-		if _, ok := containersMap[container.DeploymentUnitId]; ok {
-			containersMap[container.DeploymentUnitId] = append(containersMap[container.DeploymentUnitId], container)
-		} else {
-			containersMap[container.DeploymentUnitId] = []client.Container{
-				container,
-			}
-		}
-	}
-
-	for _, deploymentUnit := range deploymentUnits.Data {
-		deploymentUnitContainers, ok := containersMap[deploymentUnit.Id]
-		if !ok {
-			continue
-		}
-
-		revision, err := rancherClient.Revision.ById(deploymentUnit.RevisionId)
-		if err != nil {
-			return err
-		}
-
-		deploymentUnit := types.DeploymentUnit{
-			DeploymentUnit: deploymentUnit,
-			Containers:     deploymentUnitContainers,
-		}
-		if revision != nil {
-			deploymentUnit.Revision = revision.Id
-		}
-
-		newDeploymentUnitsCache = append(newDeploymentUnitsCache, deploymentUnit)
-	}
-
-	deploymentUnitsCache = newDeploymentUnitsCache
-
-	return nil
-}
-
-func updateVolumes(rancherClient *client.RancherClient) error {
-	volumes, err := rancherClient.Volume.List(&client.ListOpts{
-		Filters: map[string]interface{}{},
-	})
-	if err != nil {
-		return err
-	}
-
-	if volumes != nil {
-		var metadataVolumes []types.Volume
-		for _, volume := range volumes.Data {
-			metadataVolumes = append(metadataVolumes, types.Volume{
-				Volume: volume,
-			})
-		}
-		volumesCache = metadataVolumes
-	}
-
-	return nil
 }

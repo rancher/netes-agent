@@ -65,6 +65,8 @@ type AgentOperations interface {
 
 	ActionFinishreconnect(*Agent) (*Agent, error)
 
+	ActionPurge(*Agent) (*Agent, error)
+
 	ActionReconnect(*Agent) (*Agent, error)
 
 	ActionRemove(*Agent) (*Agent, error)
@@ -163,6 +165,15 @@ func (c *AgentClient) ActionFinishreconnect(resource *Agent) (*Agent, error) {
 	resp := &Agent{}
 
 	err := c.rancherClient.doAction(AGENT_TYPE, "finishreconnect", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *AgentClient) ActionPurge(resource *Agent) (*Agent, error) {
+
+	resp := &Agent{}
+
+	err := c.rancherClient.doAction(AGENT_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

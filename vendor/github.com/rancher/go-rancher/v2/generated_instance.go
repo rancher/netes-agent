@@ -15,8 +15,6 @@ type Instance struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
-	Desired bool `json:"desired,omitempty" yaml:"desired,omitempty"`
-
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 
 	HostId string `json:"hostId,omitempty" yaml:"host_id,omitempty"`
@@ -28,8 +26,6 @@ type Instance struct {
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
-
-	RevisionId string `json:"revisionId,omitempty" yaml:"revision_id,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
@@ -71,7 +67,9 @@ type InstanceOperations interface {
 
 	ActionMigrate(*Instance) (*Instance, error)
 
-	ActionRemove(*Instance, *InstanceRemove) (*Instance, error)
+	ActionPurge(*Instance) (*Instance, error)
+
+	ActionRemove(*Instance) (*Instance, error)
 
 	ActionRestart(*Instance) (*Instance, error)
 
@@ -192,11 +190,20 @@ func (c *InstanceClient) ActionMigrate(resource *Instance) (*Instance, error) {
 	return resp, err
 }
 
-func (c *InstanceClient) ActionRemove(resource *Instance, input *InstanceRemove) (*Instance, error) {
+func (c *InstanceClient) ActionPurge(resource *Instance) (*Instance, error) {
 
 	resp := &Instance{}
 
-	err := c.rancherClient.doAction(INSTANCE_TYPE, "remove", &resource.Resource, input, resp)
+	err := c.rancherClient.doAction(INSTANCE_TYPE, "purge", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *InstanceClient) ActionRemove(resource *Instance) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(INSTANCE_TYPE, "remove", &resource.Resource, nil, resp)
 
 	return resp, err
 }

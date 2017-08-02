@@ -75,25 +75,21 @@ type KubernetesServiceOperations interface {
 
 	ActionCancelupgrade(*KubernetesService) (*Service, error)
 
+	ActionContinueupgrade(*KubernetesService) (*Service, error)
+
 	ActionCreate(*KubernetesService) (*Service, error)
 
 	ActionDeactivate(*KubernetesService) (*Service, error)
 
-	ActionError(*KubernetesService) (*Service, error)
-
 	ActionFinishupgrade(*KubernetesService) (*Service, error)
-
-	ActionGarbagecollect(*KubernetesService) (*Service, error)
-
-	ActionPause(*KubernetesService) (*Service, error)
 
 	ActionRemove(*KubernetesService) (*Service, error)
 
 	ActionRemoveservicelink(*KubernetesService, *AddRemoveServiceLinkInput) (*Service, error)
 
-	ActionRestart(*KubernetesService) (*Service, error)
+	ActionRestart(*KubernetesService, *ServiceRestart) (*Service, error)
 
-	ActionRollback(*KubernetesService, *ServiceRollback) (*Service, error)
+	ActionRollback(*KubernetesService) (*Service, error)
 
 	ActionSetservicelinks(*KubernetesService, *SetServiceLinksInput) (*Service, error)
 
@@ -179,6 +175,15 @@ func (c *KubernetesServiceClient) ActionCancelupgrade(resource *KubernetesServic
 	return resp, err
 }
 
+func (c *KubernetesServiceClient) ActionContinueupgrade(resource *KubernetesService) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "continueupgrade", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *KubernetesServiceClient) ActionCreate(resource *KubernetesService) (*Service, error) {
 
 	resp := &Service{}
@@ -197,38 +202,11 @@ func (c *KubernetesServiceClient) ActionDeactivate(resource *KubernetesService) 
 	return resp, err
 }
 
-func (c *KubernetesServiceClient) ActionError(resource *KubernetesService) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "error", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *KubernetesServiceClient) ActionFinishupgrade(resource *KubernetesService) (*Service, error) {
 
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "finishupgrade", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *KubernetesServiceClient) ActionGarbagecollect(resource *KubernetesService) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "garbagecollect", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *KubernetesServiceClient) ActionPause(resource *KubernetesService) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "pause", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -251,20 +229,20 @@ func (c *KubernetesServiceClient) ActionRemoveservicelink(resource *KubernetesSe
 	return resp, err
 }
 
-func (c *KubernetesServiceClient) ActionRestart(resource *KubernetesService) (*Service, error) {
+func (c *KubernetesServiceClient) ActionRestart(resource *KubernetesService, input *ServiceRestart) (*Service, error) {
 
 	resp := &Service{}
 
-	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "restart", &resource.Resource, nil, resp)
+	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "restart", &resource.Resource, input, resp)
 
 	return resp, err
 }
 
-func (c *KubernetesServiceClient) ActionRollback(resource *KubernetesService, input *ServiceRollback) (*Service, error) {
+func (c *KubernetesServiceClient) ActionRollback(resource *KubernetesService) (*Service, error) {
 
 	resp := &Service{}
 
-	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "rollback", &resource.Resource, input, resp)
+	err := c.rancherClient.doAction(KUBERNETES_SERVICE_TYPE, "rollback", &resource.Resource, nil, resp)
 
 	return resp, err
 }

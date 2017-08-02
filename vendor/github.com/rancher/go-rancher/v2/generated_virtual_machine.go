@@ -43,13 +43,9 @@ type VirtualMachine struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
-	DeploymentUnitId string `json:"deploymentUnitId,omitempty" yaml:"deployment_unit_id,omitempty"`
-
 	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-
-	Desired bool `json:"desired,omitempty" yaml:"desired,omitempty"`
 
 	DiskQuota int64 `json:"diskQuota,omitempty" yaml:"disk_quota,omitempty"`
 
@@ -62,8 +58,6 @@ type VirtualMachine struct {
 	DnsSearch []string `json:"dnsSearch,omitempty" yaml:"dns_search,omitempty"`
 
 	DomainName string `json:"domainName,omitempty" yaml:"domain_name,omitempty"`
-
-	ExitCode int64 `json:"exitCode,omitempty" yaml:"exit_code,omitempty"`
 
 	Expose []string `json:"expose,omitempty" yaml:"expose,omitempty"`
 
@@ -92,6 +86,8 @@ type VirtualMachine struct {
 	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 
 	ImageUuid string `json:"imageUuid,omitempty" yaml:"image_uuid,omitempty"`
+
+	RunInit bool `json:"runInit,omitempty" yaml:"runInit,omitempty"`
 
 	InstanceLinks map[string]interface{} `json:"instanceLinks,omitempty" yaml:"instance_links,omitempty"`
 
@@ -126,8 +122,6 @@ type VirtualMachine struct {
 	MemorySwap int64 `json:"memorySwap,omitempty" yaml:"memory_swap,omitempty"`
 
 	MemorySwappiness int64 `json:"memorySwappiness,omitempty" yaml:"memory_swappiness,omitempty"`
-
-	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
 	MilliCpuReservation int64 `json:"milliCpuReservation,omitempty" yaml:"milli_cpu_reservation,omitempty"`
 
@@ -172,8 +166,6 @@ type VirtualMachine struct {
 	ServiceIds []string `json:"serviceIds,omitempty" yaml:"service_ids,omitempty"`
 
 	ShmSize int64 `json:"shmSize,omitempty" yaml:"shm_size,omitempty"`
-
-	SidekickTo string `json:"sidekickTo,omitempty" yaml:"sidekick_to,omitempty"`
 
 	StackId string `json:"stackId,omitempty" yaml:"stack_id,omitempty"`
 
@@ -241,8 +233,6 @@ type VirtualMachineOperations interface {
 
 	ActionConsole(*VirtualMachine, *InstanceConsoleInput) (*InstanceConsole, error)
 
-	ActionConverttoservice(*VirtualMachine) (*Service, error)
-
 	ActionCreate(*VirtualMachine) (*Instance, error)
 
 	ActionDeallocate(*VirtualMachine) (*Instance, error)
@@ -257,7 +247,9 @@ type VirtualMachineOperations interface {
 
 	ActionProxy(*VirtualMachine, *ContainerProxy) (*HostAccess, error)
 
-	ActionRemove(*VirtualMachine, *InstanceRemove) (*Instance, error)
+	ActionPurge(*VirtualMachine) (*Instance, error)
+
+	ActionRemove(*VirtualMachine) (*Instance, error)
 
 	ActionRestart(*VirtualMachine) (*Instance, error)
 
@@ -272,8 +264,6 @@ type VirtualMachineOperations interface {
 	ActionUpdatereinitializing(*VirtualMachine) (*Instance, error)
 
 	ActionUpdateunhealthy(*VirtualMachine) (*Instance, error)
-
-	ActionUpgrade(*VirtualMachine, *ContainerUpgrade) (*Revision, error)
 }
 
 func newVirtualMachineClient(rancherClient *RancherClient) *VirtualMachineClient {
@@ -344,15 +334,6 @@ func (c *VirtualMachineClient) ActionConsole(resource *VirtualMachine, input *In
 	return resp, err
 }
 
-func (c *VirtualMachineClient) ActionConverttoservice(resource *VirtualMachine) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "converttoservice", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *VirtualMachineClient) ActionCreate(resource *VirtualMachine) (*Instance, error) {
 
 	resp := &Instance{}
@@ -416,11 +397,20 @@ func (c *VirtualMachineClient) ActionProxy(resource *VirtualMachine, input *Cont
 	return resp, err
 }
 
-func (c *VirtualMachineClient) ActionRemove(resource *VirtualMachine, input *InstanceRemove) (*Instance, error) {
+func (c *VirtualMachineClient) ActionPurge(resource *VirtualMachine) (*Instance, error) {
 
 	resp := &Instance{}
 
-	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "remove", &resource.Resource, input, resp)
+	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "purge", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *VirtualMachineClient) ActionRemove(resource *VirtualMachine) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "remove", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -484,15 +474,6 @@ func (c *VirtualMachineClient) ActionUpdateunhealthy(resource *VirtualMachine) (
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "updateunhealthy", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *VirtualMachineClient) ActionUpgrade(resource *VirtualMachine, input *ContainerUpgrade) (*Revision, error) {
-
-	resp := &Revision{}
-
-	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "upgrade", &resource.Resource, input, resp)
 
 	return resp, err
 }

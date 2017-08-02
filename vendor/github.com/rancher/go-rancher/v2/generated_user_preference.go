@@ -61,6 +61,8 @@ type UserPreferenceOperations interface {
 
 	ActionDeactivate(*UserPreference) (*UserPreference, error)
 
+	ActionPurge(*UserPreference) (*UserPreference, error)
+
 	ActionRemove(*UserPreference) (*UserPreference, error)
 
 	ActionUpdate(*UserPreference) (*UserPreference, error)
@@ -139,6 +141,15 @@ func (c *UserPreferenceClient) ActionDeactivate(resource *UserPreference) (*User
 	resp := &UserPreference{}
 
 	err := c.rancherClient.doAction(USER_PREFERENCE_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *UserPreferenceClient) ActionPurge(resource *UserPreference) (*UserPreference, error) {
+
+	resp := &UserPreference{}
+
+	err := c.rancherClient.doAction(USER_PREFERENCE_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

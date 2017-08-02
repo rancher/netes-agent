@@ -65,6 +65,8 @@ type IpAddressOperations interface {
 
 	ActionDisassociate(*IpAddress) (*IpAddress, error)
 
+	ActionPurge(*IpAddress) (*IpAddress, error)
+
 	ActionRemove(*IpAddress) (*IpAddress, error)
 
 	ActionUpdate(*IpAddress) (*IpAddress, error)
@@ -161,6 +163,15 @@ func (c *IpAddressClient) ActionDisassociate(resource *IpAddress) (*IpAddress, e
 	resp := &IpAddress{}
 
 	err := c.rancherClient.doAction(IP_ADDRESS_TYPE, "disassociate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *IpAddressClient) ActionPurge(resource *IpAddress) (*IpAddress, error) {
+
+	resp := &IpAddress{}
+
+	err := c.rancherClient.doAction(IP_ADDRESS_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

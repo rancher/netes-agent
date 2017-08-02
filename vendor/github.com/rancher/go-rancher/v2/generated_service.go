@@ -11,10 +11,6 @@ type Service struct {
 
 	AssignServiceIpAddress bool `json:"assignServiceIpAddress,omitempty" yaml:"assign_service_ip_address,omitempty"`
 
-	BatchSize int64 `json:"batchSize,omitempty" yaml:"batch_size,omitempty"`
-
-	CompleteUpdate bool `json:"completeUpdate,omitempty" yaml:"complete_update,omitempty"`
-
 	CreateIndex int64 `json:"createIndex,omitempty" yaml:"create_index,omitempty"`
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
@@ -27,35 +23,23 @@ type Service struct {
 
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 
-	ExternalIpAddresses []string `json:"externalIpAddresses,omitempty" yaml:"external_ip_addresses,omitempty"`
-
 	Fqdn string `json:"fqdn,omitempty" yaml:"fqdn,omitempty"`
-
-	HealthCheck *InstanceHealthCheck `json:"healthCheck,omitempty" yaml:"health_check,omitempty"`
 
 	HealthState string `json:"healthState,omitempty" yaml:"health_state,omitempty"`
 
-	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
-
 	InstanceIds []string `json:"instanceIds,omitempty" yaml:"instance_ids,omitempty"`
-
-	IntervalMillis int64 `json:"intervalMillis,omitempty" yaml:"interval_millis,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
 	LaunchConfig *LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
 
-	LbConfig *LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
+	LbConfig *LbTargetConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
 	LinkedServices map[string]interface{} `json:"linkedServices,omitempty" yaml:"linked_services,omitempty"`
 
 	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	NetworkDriver *NetworkDriver `json:"networkDriver,omitempty" yaml:"network_driver,omitempty"`
-
-	PreviousRevisionId string `json:"previousRevisionId,omitempty" yaml:"previous_revision_id,omitempty"`
 
 	PublicEndpoints []PublicEndpoint `json:"publicEndpoints,omitempty" yaml:"public_endpoints,omitempty"`
 
@@ -65,29 +49,21 @@ type Service struct {
 
 	RetainIp bool `json:"retainIp,omitempty" yaml:"retain_ip,omitempty"`
 
-	RevisionId string `json:"revisionId,omitempty" yaml:"revision_id,omitempty"`
-
 	Scale int64 `json:"scale,omitempty" yaml:"scale,omitempty"`
 
-	ScaleIncrement int64 `json:"scaleIncrement,omitempty" yaml:"scale_increment,omitempty"`
-
-	ScaleMax int64 `json:"scaleMax,omitempty" yaml:"scale_max,omitempty"`
-
-	ScaleMin int64 `json:"scaleMin,omitempty" yaml:"scale_min,omitempty"`
+	ScalePolicy *ScalePolicy `json:"scalePolicy,omitempty" yaml:"scale_policy,omitempty"`
 
 	SecondaryLaunchConfigs []SecondaryLaunchConfig `json:"secondaryLaunchConfigs,omitempty" yaml:"secondary_launch_configs,omitempty"`
 
 	SelectorContainer string `json:"selectorContainer,omitempty" yaml:"selector_container,omitempty"`
 
-	StackId string `json:"stackId,omitempty" yaml:"stack_id,omitempty"`
+	SelectorLink string `json:"selectorLink,omitempty" yaml:"selector_link,omitempty"`
 
-	StartFirst bool `json:"startFirst,omitempty" yaml:"start_first,omitempty"`
+	StackId string `json:"stackId,omitempty" yaml:"stack_id,omitempty"`
 
 	StartOnCreate bool `json:"startOnCreate,omitempty" yaml:"start_on_create,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
-
-	StorageDriver *StorageDriver `json:"storageDriver,omitempty" yaml:"storage_driver,omitempty"`
 
 	System bool `json:"system,omitempty" yaml:"system,omitempty"`
 
@@ -127,25 +103,21 @@ type ServiceOperations interface {
 
 	ActionCancelupgrade(*Service) (*Service, error)
 
+	ActionContinueupgrade(*Service) (*Service, error)
+
 	ActionCreate(*Service) (*Service, error)
 
 	ActionDeactivate(*Service) (*Service, error)
 
-	ActionError(*Service) (*Service, error)
-
 	ActionFinishupgrade(*Service) (*Service, error)
-
-	ActionGarbagecollect(*Service) (*Service, error)
-
-	ActionPause(*Service) (*Service, error)
 
 	ActionRemove(*Service) (*Service, error)
 
 	ActionRemoveservicelink(*Service, *AddRemoveServiceLinkInput) (*Service, error)
 
-	ActionRestart(*Service) (*Service, error)
+	ActionRestart(*Service, *ServiceRestart) (*Service, error)
 
-	ActionRollback(*Service, *ServiceRollback) (*Service, error)
+	ActionRollback(*Service) (*Service, error)
 
 	ActionSetservicelinks(*Service, *SetServiceLinksInput) (*Service, error)
 
@@ -231,6 +203,15 @@ func (c *ServiceClient) ActionCancelupgrade(resource *Service) (*Service, error)
 	return resp, err
 }
 
+func (c *ServiceClient) ActionContinueupgrade(resource *Service) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(SERVICE_TYPE, "continueupgrade", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *ServiceClient) ActionCreate(resource *Service) (*Service, error) {
 
 	resp := &Service{}
@@ -249,38 +230,11 @@ func (c *ServiceClient) ActionDeactivate(resource *Service) (*Service, error) {
 	return resp, err
 }
 
-func (c *ServiceClient) ActionError(resource *Service) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(SERVICE_TYPE, "error", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *ServiceClient) ActionFinishupgrade(resource *Service) (*Service, error) {
 
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(SERVICE_TYPE, "finishupgrade", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *ServiceClient) ActionGarbagecollect(resource *Service) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(SERVICE_TYPE, "garbagecollect", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *ServiceClient) ActionPause(resource *Service) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(SERVICE_TYPE, "pause", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -303,20 +257,20 @@ func (c *ServiceClient) ActionRemoveservicelink(resource *Service, input *AddRem
 	return resp, err
 }
 
-func (c *ServiceClient) ActionRestart(resource *Service) (*Service, error) {
+func (c *ServiceClient) ActionRestart(resource *Service, input *ServiceRestart) (*Service, error) {
 
 	resp := &Service{}
 
-	err := c.rancherClient.doAction(SERVICE_TYPE, "restart", &resource.Resource, nil, resp)
+	err := c.rancherClient.doAction(SERVICE_TYPE, "restart", &resource.Resource, input, resp)
 
 	return resp, err
 }
 
-func (c *ServiceClient) ActionRollback(resource *Service, input *ServiceRollback) (*Service, error) {
+func (c *ServiceClient) ActionRollback(resource *Service) (*Service, error) {
 
 	resp := &Service{}
 
-	err := c.rancherClient.doAction(SERVICE_TYPE, "rollback", &resource.Resource, input, resp)
+	err := c.rancherClient.doAction(SERVICE_TYPE, "rollback", &resource.Resource, nil, resp)
 
 	return resp, err
 }

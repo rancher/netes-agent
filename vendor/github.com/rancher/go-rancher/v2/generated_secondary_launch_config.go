@@ -27,8 +27,6 @@ type SecondaryLaunchConfig struct {
 
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
 
-	CompleteUpdate bool `json:"completeUpdate,omitempty" yaml:"complete_update,omitempty"`
-
 	Count int64 `json:"count,omitempty" yaml:"count,omitempty"`
 
 	CpuCount int64 `json:"cpuCount,omitempty" yaml:"cpu_count,omitempty"`
@@ -59,13 +57,9 @@ type SecondaryLaunchConfig struct {
 
 	DataVolumesFromLaunchConfigs []string `json:"dataVolumesFromLaunchConfigs,omitempty" yaml:"data_volumes_from_launch_configs,omitempty"`
 
-	DeploymentUnitId string `json:"deploymentUnitId,omitempty" yaml:"deployment_unit_id,omitempty"`
-
 	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-
-	Desired bool `json:"desired,omitempty" yaml:"desired,omitempty"`
 
 	Devices []string `json:"devices,omitempty" yaml:"devices,omitempty"`
 
@@ -84,8 +78,6 @@ type SecondaryLaunchConfig struct {
 	EntryPoint []string `json:"entryPoint,omitempty" yaml:"entry_point,omitempty"`
 
 	Environment map[string]interface{} `json:"environment,omitempty" yaml:"environment,omitempty"`
-
-	ExitCode int64 `json:"exitCode,omitempty" yaml:"exit_code,omitempty"`
 
 	Expose []string `json:"expose,omitempty" yaml:"expose,omitempty"`
 
@@ -114,6 +106,8 @@ type SecondaryLaunchConfig struct {
 	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 
 	ImageUuid string `json:"imageUuid,omitempty" yaml:"image_uuid,omitempty"`
+
+	RunInit bool `json:"runInit,omitempty" yaml:"runInit,omitempty"`
 
 	InstanceLinks map[string]interface{} `json:"instanceLinks,omitempty" yaml:"instance_links,omitempty"`
 
@@ -151,8 +145,6 @@ type SecondaryLaunchConfig struct {
 
 	MemorySwappiness int64 `json:"memorySwappiness,omitempty" yaml:"memory_swappiness,omitempty"`
 
-	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-
 	MilliCpuReservation int64 `json:"milliCpuReservation,omitempty" yaml:"milli_cpu_reservation,omitempty"`
 
 	Mounts []MountEntry `json:"mounts,omitempty" yaml:"mounts,omitempty"`
@@ -181,8 +173,6 @@ type SecondaryLaunchConfig struct {
 
 	Ports []string `json:"ports,omitempty" yaml:"ports,omitempty"`
 
-	PrePullOnUpgrade string `json:"prePullOnUpgrade,omitempty" yaml:"pre_pull_on_upgrade,omitempty"`
-
 	PrimaryIpAddress string `json:"primaryIpAddress,omitempty" yaml:"primary_ip_address,omitempty"`
 
 	PrimaryNetworkId string `json:"primaryNetworkId,omitempty" yaml:"primary_network_id,omitempty"`
@@ -203,10 +193,6 @@ type SecondaryLaunchConfig struct {
 
 	RequestedIpAddress string `json:"requestedIpAddress,omitempty" yaml:"requested_ip_address,omitempty"`
 
-	RestartPolicy *RestartPolicy `json:"restartPolicy,omitempty" yaml:"restart_policy,omitempty"`
-
-	RevisionId string `json:"revisionId,omitempty" yaml:"revision_id,omitempty"`
-
 	Secrets []SecretReference `json:"secrets,omitempty" yaml:"secrets,omitempty"`
 
 	SecurityOpt []string `json:"securityOpt,omitempty" yaml:"security_opt,omitempty"`
@@ -216,8 +202,6 @@ type SecondaryLaunchConfig struct {
 	ServiceIds []string `json:"serviceIds,omitempty" yaml:"service_ids,omitempty"`
 
 	ShmSize int64 `json:"shmSize,omitempty" yaml:"shm_size,omitempty"`
-
-	SidekickTo string `json:"sidekickTo,omitempty" yaml:"sidekick_to,omitempty"`
 
 	StackId string `json:"stackId,omitempty" yaml:"stack_id,omitempty"`
 
@@ -293,8 +277,6 @@ type SecondaryLaunchConfigOperations interface {
 
 	ActionConsole(*SecondaryLaunchConfig, *InstanceConsoleInput) (*InstanceConsole, error)
 
-	ActionConverttoservice(*SecondaryLaunchConfig) (*Service, error)
-
 	ActionCreate(*SecondaryLaunchConfig) (*Instance, error)
 
 	ActionDeallocate(*SecondaryLaunchConfig) (*Instance, error)
@@ -307,7 +289,9 @@ type SecondaryLaunchConfigOperations interface {
 
 	ActionProxy(*SecondaryLaunchConfig, *ContainerProxy) (*HostAccess, error)
 
-	ActionRemove(*SecondaryLaunchConfig, *InstanceRemove) (*Instance, error)
+	ActionPurge(*SecondaryLaunchConfig) (*Instance, error)
+
+	ActionRemove(*SecondaryLaunchConfig) (*Instance, error)
 
 	ActionRestart(*SecondaryLaunchConfig) (*Instance, error)
 
@@ -322,8 +306,6 @@ type SecondaryLaunchConfigOperations interface {
 	ActionUpdatereinitializing(*SecondaryLaunchConfig) (*Instance, error)
 
 	ActionUpdateunhealthy(*SecondaryLaunchConfig) (*Instance, error)
-
-	ActionUpgrade(*SecondaryLaunchConfig, *ContainerUpgrade) (*Revision, error)
 }
 
 func newSecondaryLaunchConfigClient(rancherClient *RancherClient) *SecondaryLaunchConfigClient {
@@ -394,15 +376,6 @@ func (c *SecondaryLaunchConfigClient) ActionConsole(resource *SecondaryLaunchCon
 	return resp, err
 }
 
-func (c *SecondaryLaunchConfigClient) ActionConverttoservice(resource *SecondaryLaunchConfig) (*Service, error) {
-
-	resp := &Service{}
-
-	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "converttoservice", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
 func (c *SecondaryLaunchConfigClient) ActionCreate(resource *SecondaryLaunchConfig) (*Instance, error) {
 
 	resp := &Instance{}
@@ -457,11 +430,20 @@ func (c *SecondaryLaunchConfigClient) ActionProxy(resource *SecondaryLaunchConfi
 	return resp, err
 }
 
-func (c *SecondaryLaunchConfigClient) ActionRemove(resource *SecondaryLaunchConfig, input *InstanceRemove) (*Instance, error) {
+func (c *SecondaryLaunchConfigClient) ActionPurge(resource *SecondaryLaunchConfig) (*Instance, error) {
 
 	resp := &Instance{}
 
-	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "remove", &resource.Resource, input, resp)
+	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "purge", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *SecondaryLaunchConfigClient) ActionRemove(resource *SecondaryLaunchConfig) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "remove", &resource.Resource, nil, resp)
 
 	return resp, err
 }
@@ -525,15 +507,6 @@ func (c *SecondaryLaunchConfigClient) ActionUpdateunhealthy(resource *SecondaryL
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "updateunhealthy", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *SecondaryLaunchConfigClient) ActionUpgrade(resource *SecondaryLaunchConfig, input *ContainerUpgrade) (*Revision, error) {
-
-	resp := &Revision{}
-
-	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "upgrade", &resource.Resource, input, resp)
 
 	return resp, err
 }

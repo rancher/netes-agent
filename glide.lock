@@ -1,5 +1,5 @@
-hash: 716934891d1a86cf36ff7c950d4db376d44586f3537bb56fa44cb8b087917408
-updated: 2017-07-27T13:56:21.275865173-07:00
+hash: b94b933c090f27f4c15f861244e14c45b03e763a7500cc8095b5811cae4c8487
+updated: 2017-08-01T14:21:27.985549357-07:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -15,6 +15,8 @@ imports:
   subpackages:
   - log
   - swagger
+- name: github.com/fatih/structs
+  version: a720dfa8df582c51dee1b36feabb906bde1588bd
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-openapi/jsonpointer
@@ -44,6 +46,8 @@ imports:
   - buffer
   - jlexer
   - jwriter
+- name: github.com/mitchellh/mapstructure
+  version: d0303fe809921458f417bcf828397a65db30a7e4
 - name: github.com/pkg/errors
   version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/PuerkitoBio/purell
@@ -56,12 +60,13 @@ imports:
   - events
   - locks
 - name: github.com/rancher/go-rancher
-  version: 67eba3ff03e67e5b845ffba7278ddf5f95c10ad4
-  repo: https://github.com/joshwget/go-rancher
+  version: 9b58ca15aa7f6ee9b905906ae4e0a76b687bad0b
+  repo: https://github.com/ibuildthecloud/go-rancher
   subpackages:
   - v2
+  - v3
 - name: github.com/Sirupsen/logrus
-  version: 9aa7601a1185e3bc8a0d3f87b1a55b05df0102e4
+  version: 26709e2714106fb8ad40b773b711ebce25b78914
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/ugorji/go
@@ -79,11 +84,6 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
-- name: golang.org/x/sys
-  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
-  subpackages:
-  - unix
-  - windows
 - name: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
@@ -236,5 +236,3 @@ testImports:
   version: e3a8ff8ce36581f87a15341206f205b1da467059
   subpackages:
   - assert
-- name: gopkg.in/check.v1
-  version: 64131543e7896d5bcc6bd5a76287eb75ea96c673

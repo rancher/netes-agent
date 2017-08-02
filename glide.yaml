@@ -3,5 +3,11 @@ import:
 - package: k8s.io/client-go
   version: v3.0.0-beta.0
 - package: github.com/rancher/go-rancher
-  version: 67eba3ff03e67e5b845ffba7278ddf5f95c10ad4
-  repo: https://github.com/joshwget/go-rancher
+  version: 9b58ca15aa7f6ee9b905906ae4e0a76b687bad0b
+  repo: https://github.com/ibuildthecloud/go-rancher
+- package: github.com/Sirupsen/logrus
+  version: 26709e2714106fb8ad40b773b711ebce25b78914
+- package: github.com/mitchellh/mapstructure
+  version: d0303fe809921458f417bcf828397a65db30a7e4
+- package: github.com/fatih/structs
+  version: v1.0.0

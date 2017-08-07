@@ -2,22 +2,22 @@ package sync
 
 import (
 	"github.com/rancher/go-rancher/v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-func responseFromPod(pod v1.Pod) (client.DeploymentSyncResponse, error) {
+const (
+	rancherHostUuidLabel = "io.rancher.host.uuid"
+)
+
+func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 	var instanceStatuses []client.InstanceStatus
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 		// Don't report back on Rancher pause container
 		if containerStatus.Name == rancherPauseContainerName {
 			continue
 		}
-
-		// TODO
-		/*hostUuid, err := hostname.UuidFromName(pod.Spec.NodeName)
-		if err != nil {
-			return client.DeploymentSyncResponse{}, err
-		}*/
 
 		state := ""
 		// TODO: might be the wrong way to tell this
@@ -26,8 +26,7 @@ func responseFromPod(pod v1.Pod) (client.DeploymentSyncResponse, error) {
 		}
 
 		instanceStatuses = append(instanceStatuses, client.InstanceStatus{
-			ExternalId: containerStatus.ContainerID,
-			//HostUuid:         hostUuid,
+			ExternalId:       containerStatus.ContainerID,
 			InstanceUuid:     containerStatus.Name,
 			PrimaryIpAddress: pod.Status.PodIP,
 			State:            state,
@@ -36,5 +35,27 @@ func responseFromPod(pod v1.Pod) (client.DeploymentSyncResponse, error) {
 
 	return client.DeploymentSyncResponse{
 		InstanceStatus: instanceStatuses,
-	}, nil
+	}
+}
+
+func addHostUuidToResponse(clientset *kubernetes.Clientset, pod v1.Pod, response client.DeploymentSyncResponse) (client.DeploymentSyncResponse, error) {
+	if pod.Spec.NodeName == "" {
+		return response, nil
+	}
+
+	node, err := clientset.Nodes().Get(pod.Spec.NodeName, metav1.GetOptions{})
+	if err != nil {
+		return client.DeploymentSyncResponse{}, err
+	}
+
+	uuid, ok := node.Labels[rancherHostUuidLabel]
+	if !ok {
+		return response, nil
+	}
+
+	for i := range response.InstanceStatus {
+		response.InstanceStatus[i].HostUuid = uuid
+	}
+
+	return response, nil
 }

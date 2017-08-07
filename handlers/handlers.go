@@ -10,8 +10,7 @@ import (
 	"github.com/fatih/structs"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/v2"
-	v3 "github.com/rancher/go-rancher/v3"
+	"github.com/rancher/go-rancher/v3"
 	"github.com/rancherlabs/kattle/sync"
 	"github.com/rancherlabs/kattle/watch"
 )
@@ -34,7 +33,7 @@ func GetHandlers() map[string]events.EventHandler {
 }
 
 func handleComputeInstanceActivate(event *events.Event, apiClient *client.RancherClient) error {
-	var request v3.DeploymentSyncRequest
+	var request client.DeploymentSyncRequest
 	if err := mapstructure.Decode(event.Data["deploymentSyncRequest"], &request); err != nil {
 		return err
 	}
@@ -48,14 +47,14 @@ func handleComputeInstanceActivate(event *events.Event, apiClient *client.Ranche
 }
 
 func handleComputeInstanceRemove(event *events.Event, apiClient *client.RancherClient) error {
-	var request v3.DeploymentSyncRequest
+	var request client.DeploymentSyncRequest
 	if err := mapstructure.Decode(event.Data["deploymentSyncRequest"], &request); err != nil {
 		return err
 	}
 	return sync.Remove(Clientset, WatchClient, request)
 }
 
-func reply(response v3.DeploymentSyncResponse, event *events.Event, apiClient *client.RancherClient) error {
+func reply(response client.DeploymentSyncResponse, event *events.Event, apiClient *client.RancherClient) error {
 	reply := &client.Publish{
 		ResourceId: event.ResourceID,
 		PreviousIds: []string{

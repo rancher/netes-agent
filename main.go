@@ -7,10 +7,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/rancher/go-rancher/v2"
 	"github.com/rancherlabs/kattle/events"
 	"github.com/rancherlabs/kattle/handlers"
-	"github.com/rancherlabs/kattle/hostname"
 	"github.com/rancherlabs/kattle/watch"
 	"github.com/urfave/cli"
 )
@@ -49,14 +47,6 @@ func main() {
 }
 
 func action(c *cli.Context) error {
-	rancherClient, err := createRancherClient()
-	if err != nil {
-		return err
-	}
-
-	// TODO: this is bad
-	hostname.RancherClient = rancherClient
-
 	kubernetesURL := c.String("kubernetes-master")
 	username := c.String("username")
 	password := c.String("password")
@@ -79,18 +69,6 @@ func action(c *cli.Context) error {
 	cattleSecretKey := os.Getenv(cattleSecretKeyEnv)
 
 	return events.Listen(cattleURL, cattleAccessKey, cattleSecretKey, 250)
-}
-
-func createRancherClient() (*client.RancherClient, error) {
-	url, err := client.NormalizeUrl(os.Getenv(cattleURLEnv))
-	if err != nil {
-		return nil, err
-	}
-	return client.NewRancherClient(&client.ClientOpts{
-		Url:       url,
-		AccessKey: os.Getenv(cattleAccessKeyEnv),
-		SecretKey: os.Getenv(cattleSecretKeyEnv),
-	})
 }
 
 func createKubernetesClient(url, username, password, token string) (*kubernetes.Clientset, error) {

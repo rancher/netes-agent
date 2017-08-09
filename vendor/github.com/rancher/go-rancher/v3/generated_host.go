@@ -15,7 +15,13 @@ type Host struct {
 
 	AgentState string `json:"agentState,omitempty" yaml:"agent_state,omitempty"`
 
-	ApiProxy string `json:"apiProxy,omitempty" yaml:"api_proxy,omitempty"`
+	Amazonec2Config *Amazonec2Config `json:"amazonec2Config,omitempty" yaml:"amazonec2config,omitempty"`
+
+	AuthCertificateAuthority string `json:"authCertificateAuthority,omitempty" yaml:"auth_certificate_authority,omitempty"`
+
+	AuthKey string `json:"authKey,omitempty" yaml:"auth_key,omitempty"`
+
+	AzureConfig *AzureConfig `json:"azureConfig,omitempty" yaml:"azure_config,omitempty"`
 
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
@@ -23,7 +29,29 @@ type Host struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	DigitaloceanConfig *DigitaloceanConfig `json:"digitaloceanConfig,omitempty" yaml:"digitalocean_config,omitempty"`
+
+	DockerVersion string `json:"dockerVersion,omitempty" yaml:"docker_version,omitempty"`
+
+	Driver string `json:"driver,omitempty" yaml:"driver,omitempty"`
+
+	EngineEnv map[string]interface{} `json:"engineEnv,omitempty" yaml:"engine_env,omitempty"`
+
+	EngineInsecureRegistry []string `json:"engineInsecureRegistry,omitempty" yaml:"engine_insecure_registry,omitempty"`
+
+	EngineInstallUrl string `json:"engineInstallUrl,omitempty" yaml:"engine_install_url,omitempty"`
+
+	EngineLabel map[string]interface{} `json:"engineLabel,omitempty" yaml:"engine_label,omitempty"`
+
+	EngineOpt map[string]interface{} `json:"engineOpt,omitempty" yaml:"engine_opt,omitempty"`
+
+	EngineRegistryMirror []string `json:"engineRegistryMirror,omitempty" yaml:"engine_registry_mirror,omitempty"`
+
+	EngineStorageDriver string `json:"engineStorageDriver,omitempty" yaml:"engine_storage_driver,omitempty"`
+
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
+
+	ExtractedConfig string `json:"extractedConfig,omitempty" yaml:"extracted_config,omitempty"`
 
 	HostTemplateId string `json:"hostTemplateId,omitempty" yaml:"host_template_id,omitempty"`
 
@@ -44,6 +72,8 @@ type Host struct {
 	MilliCpu int64 `json:"milliCpu,omitempty" yaml:"milli_cpu,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	PacketConfig *PacketConfig `json:"packetConfig,omitempty" yaml:"packet_config,omitempty"`
 
 	PublicEndpoints []PublicEndpoint `json:"publicEndpoints,omitempty" yaml:"public_endpoints,omitempty"`
 
@@ -84,6 +114,8 @@ type HostOperations interface {
 	ActionCreate(*Host) (*Host, error)
 
 	ActionDeactivate(*Host) (*Host, error)
+
+	ActionDockersocket(*Host) (*HostAccess, error)
 
 	ActionError(*Host) (*Host, error)
 
@@ -169,6 +201,15 @@ func (c *HostClient) ActionDeactivate(resource *Host) (*Host, error) {
 	resp := &Host{}
 
 	err := c.rancherClient.doAction(HOST_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *HostClient) ActionDockersocket(resource *Host) (*HostAccess, error) {
+
+	resp := &HostAccess{}
+
+	err := c.rancherClient.doAction(HOST_TYPE, "dockersocket", &resource.Resource, nil, resp)
 
 	return resp, err
 }

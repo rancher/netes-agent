@@ -9,6 +9,8 @@ type Project struct {
 
 	AllowSystemRole bool `json:"allowSystemRole,omitempty" yaml:"allow_system_role,omitempty"`
 
+	ComputeFlavor string `json:"computeFlavor,omitempty" yaml:"compute_flavor,omitempty"`
+
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
@@ -16,8 +18,6 @@ type Project struct {
 	DefaultNetworkId string `json:"defaultNetworkId,omitempty" yaml:"default_network_id,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-
-	HealthState string `json:"healthState,omitempty" yaml:"health_state,omitempty"`
 
 	HostRemoveDelaySeconds int64 `json:"hostRemoveDelaySeconds,omitempty" yaml:"host_remove_delay_seconds,omitempty"`
 
@@ -29,11 +29,7 @@ type Project struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
-	Orchestration string `json:"orchestration,omitempty" yaml:"orchestration,omitempty"`
-
 	ProjectLinks []string `json:"projectLinks,omitempty" yaml:"project_links,omitempty"`
-
-	ProjectTemplateId string `json:"projectTemplateId,omitempty" yaml:"project_template_id,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
@@ -50,8 +46,6 @@ type Project struct {
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 
 	Version string `json:"version,omitempty" yaml:"version,omitempty"`
-
-	VirtualMachine bool `json:"virtualMachine,omitempty" yaml:"virtual_machine,omitempty"`
 }
 
 type ProjectCollection struct {
@@ -82,10 +76,6 @@ type ProjectOperations interface {
 	ActionRemove(*Project) (*Account, error)
 
 	ActionSetmembers(*Project, *SetProjectMembersInput) (*SetProjectMembersInput, error)
-
-	ActionUpdate(*Project) (*Account, error)
-
-	ActionUpgrade(*Project) (*Account, error)
 }
 
 func newProjectClient(rancherClient *RancherClient) *ProjectClient {
@@ -188,24 +178,6 @@ func (c *ProjectClient) ActionSetmembers(resource *Project, input *SetProjectMem
 	resp := &SetProjectMembersInput{}
 
 	err := c.rancherClient.doAction(PROJECT_TYPE, "setmembers", &resource.Resource, input, resp)
-
-	return resp, err
-}
-
-func (c *ProjectClient) ActionUpdate(resource *Project) (*Account, error) {
-
-	resp := &Account{}
-
-	err := c.rancherClient.doAction(PROJECT_TYPE, "update", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *ProjectClient) ActionUpgrade(resource *Project) (*Account, error) {
-
-	resp := &Account{}
-
-	err := c.rancherClient.doAction(PROJECT_TYPE, "upgrade", &resource.Resource, nil, resp)
 
 	return resp, err
 }

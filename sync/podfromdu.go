@@ -35,7 +35,8 @@ var (
 )
 
 func PodFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
-	containers := []v1.Container{rancherPauseContainer}
+	//containers := []v1.Container{rancherPauseContainer}
+	var containers []v1.Container
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
 	}

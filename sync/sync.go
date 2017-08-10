@@ -3,7 +3,7 @@ package sync
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/go-rancher/v3"
-	"github.com/rancherlabs/kattle/watch"
+	"github.com/rancher/kattle/watch"
 	"k8s.io/client-go/kubernetes"
 )
 

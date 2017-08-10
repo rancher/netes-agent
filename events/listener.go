@@ -3,7 +3,7 @@ package events
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/event-subscriber/events"
-	"github.com/rancherlabs/kattle/handlers"
+	"github.com/rancher/kattle/handlers"
 )
 
 func Listen(eventURL, accessKey, secretKey string, workerCount int) error {

@@ -57,6 +57,8 @@ type ImageOperations interface {
 
 	ActionDeactivate(*Image) (*Image, error)
 
+	ActionPurge(*Image) (*Image, error)
+
 	ActionRemove(*Image) (*Image, error)
 
 	ActionUpdate(*Image) (*Image, error)
@@ -135,6 +137,15 @@ func (c *ImageClient) ActionDeactivate(resource *Image) (*Image, error) {
 	resp := &Image{}
 
 	err := c.rancherClient.doAction(IMAGE_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ImageClient) ActionPurge(resource *Image) (*Image, error) {
+
+	resp := &Image{}
+
+	err := c.rancherClient.doAction(IMAGE_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

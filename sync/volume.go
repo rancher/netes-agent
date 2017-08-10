@@ -1,17 +1,8 @@
 package sync
 
-import (
-	"fmt"
-	"strings"
+import "strings"
 
-	"github.com/rancherlabs/kattle/types"
-	"github.com/rancherlabs/kattle/utils"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-)
-
-type VolumeSpec struct {
+/*type VolumeSpec struct {
 	Size string                  `json:"size,omitempty"`
 	Raw  v1.PersistentVolumeSpec `json:",inline"`
 }
@@ -67,13 +58,13 @@ func PvcFromVolume(volume types.Volume) v1.PersistentVolumeClaim {
 	}
 
 	return claim
-}
+}*/
 
 func getVolumeName(volume string) string {
 	return strings.Replace(volume, "_", "-", -1)
 }
 
-func readVolumeSpec(volume types.Volume) VolumeSpec {
+/*func readVolumeSpec(volume types.Volume) VolumeSpec {
 	var raw v1.PersistentVolumeSpec
 	if err := utils.ConvertByJSON(volume.Metadata, &raw); err != nil {
 		// TODO
@@ -89,4 +80,4 @@ func readVolumeSpec(volume types.Volume) VolumeSpec {
 	}
 
 	return volumeSpec
-}
+}*/

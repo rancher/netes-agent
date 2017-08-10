@@ -63,6 +63,8 @@ type ExternalHandlerExternalHandlerProcessMapOperations interface {
 
 	ActionDeactivate(*ExternalHandlerExternalHandlerProcessMap) (*ExternalHandlerExternalHandlerProcessMap, error)
 
+	ActionPurge(*ExternalHandlerExternalHandlerProcessMap) (*ExternalHandlerExternalHandlerProcessMap, error)
+
 	ActionRemove(*ExternalHandlerExternalHandlerProcessMap) (*ExternalHandlerExternalHandlerProcessMap, error)
 
 	ActionUpdate(*ExternalHandlerExternalHandlerProcessMap) (*ExternalHandlerExternalHandlerProcessMap, error)
@@ -141,6 +143,15 @@ func (c *ExternalHandlerExternalHandlerProcessMapClient) ActionDeactivate(resour
 	resp := &ExternalHandlerExternalHandlerProcessMap{}
 
 	err := c.rancherClient.doAction(EXTERNAL_HANDLER_EXTERNAL_HANDLER_PROCESS_MAP_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ExternalHandlerExternalHandlerProcessMapClient) ActionPurge(resource *ExternalHandlerExternalHandlerProcessMap) (*ExternalHandlerExternalHandlerProcessMap, error) {
+
+	resp := &ExternalHandlerExternalHandlerProcessMap{}
+
+	err := c.rancherClient.doAction(EXTERNAL_HANDLER_EXTERNAL_HANDLER_PROCESS_MAP_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

@@ -9,8 +9,6 @@ type InstanceStop struct {
 
 	Remove bool `json:"remove,omitempty" yaml:"remove,omitempty"`
 
-	StopSource string `json:"stopSource,omitempty" yaml:"stop_source,omitempty"`
-
 	Timeout int64 `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 

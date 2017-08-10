@@ -11,8 +11,6 @@ type Register struct {
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
-	AgentUriFormat string `json:"agentUriFormat,omitempty" yaml:"agent_uri_format,omitempty"`
-
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`

@@ -1,14 +1,6 @@
 package sync
 
-import (
-	log "github.com/Sirupsen/logrus"
-	"github.com/rancherlabs/kattle/types"
-	"github.com/rancherlabs/kattle/watch"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
-)
-
-func reconcileVolumes(clientset *kubernetes.Clientset, watchClient *watch.Client, volumes []types.Volume, volumesIds map[string]bool) error {
+/*func reconcileVolumes(clientset *kubernetes.Clientset, watchClient *watch.Client, volumes []types.Volume, volumesIds map[string]bool) error {
 	for _, volume := range volumes {
 		if _, ok := volumesIds[volume.Id]; !ok {
 			continue
@@ -55,4 +47,4 @@ func createPvc(clientset *kubernetes.Clientset, pvc v1.PersistentVolumeClaim) er
 	log.Infof("Creating PVC %s", pvc.Name)
 	_, err := clientset.PersistentVolumeClaims(v1.NamespaceDefault).Create(&pvc)
 	return err
-}
+}*/

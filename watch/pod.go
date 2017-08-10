@@ -3,10 +3,7 @@ package watch
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/rancher/go-rancher/v2"
 	"github.com/rancherlabs/kattle/labels"
-	"github.com/rancherlabs/kattle/publish"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/pkg/api/v1"
@@ -20,13 +17,13 @@ func (c *Client) startPodWatch() chan struct{} {
 		&v1.Pod{},
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: podFilterAddDelete(c.rancherClient, func(pod v1.Pod) {
+			AddFunc: podFilterAddDelete(func(pod v1.Pod) {
 				c.pods[pod.Name] = pod
 			}),
-			DeleteFunc: podFilterAddDelete(c.rancherClient, func(pod v1.Pod) {
+			DeleteFunc: podFilterAddDelete(func(pod v1.Pod) {
 				delete(c.pods, pod.Name)
 			}),
-			UpdateFunc: podFilterUpdate(c.rancherClient, func(pod v1.Pod) {
+			UpdateFunc: podFilterUpdate(func(pod v1.Pod) {
 				c.pods[pod.Name] = pod
 			}),
 		},
@@ -38,20 +35,17 @@ func (c *Client) startPodWatch() chan struct{} {
 	return stop
 }
 
-func podFilterAddDelete(rancherClient *client.RancherClient, f func(v1.Pod)) func(interface{}) {
+func podFilterAddDelete(f func(v1.Pod)) func(interface{}) {
 	return func(obj interface{}) {
 		pod := obj.(*v1.Pod)
-		if err := publish.Pod(rancherClient, *pod); err != nil {
-			log.Errorf("Failed to publish reply for pod %s: %v", pod.Name, err)
-		}
 		if _, ok := pod.Labels[labels.RevisionLabel]; ok {
 			f(*pod)
 		}
 	}
 }
 
-func podFilterUpdate(rancherClient *client.RancherClient, f func(v1.Pod)) func(interface{}, interface{}) {
+func podFilterUpdate(f func(v1.Pod)) func(interface{}, interface{}) {
 	return func(oldObj, newObj interface{}) {
-		podFilterAddDelete(rancherClient, f)(newObj)
+		podFilterAddDelete(f)(newObj)
 	}
 }

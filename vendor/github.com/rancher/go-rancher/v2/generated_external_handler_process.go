@@ -55,6 +55,8 @@ type ExternalHandlerProcessOperations interface {
 
 	ActionDeactivate(*ExternalHandlerProcess) (*ExternalHandlerProcess, error)
 
+	ActionPurge(*ExternalHandlerProcess) (*ExternalHandlerProcess, error)
+
 	ActionRemove(*ExternalHandlerProcess) (*ExternalHandlerProcess, error)
 
 	ActionUpdate(*ExternalHandlerProcess) (*ExternalHandlerProcess, error)
@@ -133,6 +135,15 @@ func (c *ExternalHandlerProcessClient) ActionDeactivate(resource *ExternalHandle
 	resp := &ExternalHandlerProcess{}
 
 	err := c.rancherClient.doAction(EXTERNAL_HANDLER_PROCESS_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ExternalHandlerProcessClient) ActionPurge(resource *ExternalHandlerProcess) (*ExternalHandlerProcess, error) {
+
+	resp := &ExternalHandlerProcess{}
+
+	err := c.rancherClient.doAction(EXTERNAL_HANDLER_PROCESS_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

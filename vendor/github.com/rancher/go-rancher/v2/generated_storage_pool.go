@@ -73,6 +73,8 @@ type StoragePoolOperations interface {
 
 	ActionDeactivate(*StoragePool) (*StoragePool, error)
 
+	ActionPurge(*StoragePool) (*StoragePool, error)
+
 	ActionRemove(*StoragePool) (*StoragePool, error)
 
 	ActionUpdate(*StoragePool) (*StoragePool, error)
@@ -151,6 +153,15 @@ func (c *StoragePoolClient) ActionDeactivate(resource *StoragePool) (*StoragePoo
 	resp := &StoragePool{}
 
 	err := c.rancherClient.doAction(STORAGE_POOL_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *StoragePoolClient) ActionPurge(resource *StoragePool) (*StoragePool, error) {
+
+	resp := &StoragePool{}
+
+	err := c.rancherClient.doAction(STORAGE_POOL_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

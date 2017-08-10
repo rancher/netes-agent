@@ -127,6 +127,8 @@ type HostOperations interface {
 
 	ActionProvision(*Host) (*Host, error)
 
+	ActionPurge(*Host) (*Host, error)
+
 	ActionRemove(*Host) (*Host, error)
 
 	ActionUpdate(*Host) (*Host, error)
@@ -241,6 +243,15 @@ func (c *HostClient) ActionProvision(resource *Host) (*Host, error) {
 	resp := &Host{}
 
 	err := c.rancherClient.doAction(HOST_TYPE, "provision", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *HostClient) ActionPurge(resource *Host) (*Host, error) {
+
+	resp := &Host{}
+
+	err := c.rancherClient.doAction(HOST_TYPE, "purge", &resource.Resource, nil, resp)
 
 	return resp, err
 }

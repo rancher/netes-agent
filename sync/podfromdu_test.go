@@ -6,21 +6,37 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"github.com/rancher/go-rancher/v2"
-	"github.com/rancherlabs/kattle/types"
+	"github.com/rancher/go-rancher/v3"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPodSpec(t *testing.T) {
-	assert.Equal(t, getPodSpec(types.DeploymentUnit{
+	assert.Equal(t, getPodSpec(client.DeploymentSyncRequest{
+		Containers: []client.Container{
+			client.Container{},
+		},
+	}), v1.PodSpec{
+		RestartPolicy: v1.RestartPolicyNever,
+		DNSPolicy:     v1.DNSDefault,
+	})
+
+	assert.Equal(t, getPodSpec(client.DeploymentSyncRequest{
 		Containers: []client.Container{
 			client.Container{
 				RestartPolicy: &client.RestartPolicy{
 					Name: "always",
 				},
-				IpcMode:     "host",
-				NetworkMode: "host",
-				PidMode:     "host",
+				PrimaryNetworkId: "1",
+				IpcMode:          "host",
+				PidMode:          "host",
+			},
+		},
+		Networks: []client.Network{
+			client.Network{
+				Resource: client.Resource{
+					Id: "1",
+				},
+				Kind: hostNetworkingKind,
 			},
 		},
 	}), v1.PodSpec{
@@ -102,7 +118,7 @@ func TestSecurityContext(t *testing.T) {
 }
 
 func TestGetVolumes(t *testing.T) {
-	assert.Equal(t, getVolumes(types.DeploymentUnit{
+	assert.Equal(t, getVolumes(client.DeploymentSyncRequest{
 		Containers: []client.Container{
 			client.Container{
 				DataVolumes: []string{
@@ -120,7 +136,7 @@ func TestGetVolumes(t *testing.T) {
 			},
 		},
 	})
-	assert.Equal(t, len(getVolumes(types.DeploymentUnit{
+	assert.Equal(t, len(getVolumes(client.DeploymentSyncRequest{
 		Containers: []client.Container{
 			client.Container{
 				DataVolumes: []string{

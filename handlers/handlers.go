@@ -25,10 +25,6 @@ func GetHandlers() map[string]events.EventHandler {
 	return map[string]events.EventHandler{
 		"external.compute.instance.activate": handleComputeInstanceActivate,
 		"external.compute.instance.remove":   handleComputeInstanceRemove,
-		// TODO
-		"ping": func(event *events.Event, apiClient *client.RancherClient) error {
-			return nil
-		},
 	}
 }
 

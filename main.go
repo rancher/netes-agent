@@ -7,9 +7,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/rancherlabs/kattle/events"
-	"github.com/rancherlabs/kattle/handlers"
-	"github.com/rancherlabs/kattle/watch"
+	"github.com/rancher/kattle/events"
+	"github.com/rancher/kattle/handlers"
+	"github.com/rancher/kattle/watch"
 	"github.com/urfave/cli"
 )
 

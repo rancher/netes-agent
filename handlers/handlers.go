@@ -11,8 +11,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
-	"github.com/rancherlabs/kattle/sync"
-	"github.com/rancherlabs/kattle/watch"
+	"github.com/rancher/kattle/sync"
+	"github.com/rancher/kattle/watch"
 )
 
 // TODO

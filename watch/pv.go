@@ -16,13 +16,10 @@ func (c *Client) startPvWatch() chan struct{} {
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: pvFilterAddDelete(func(pv v1.PersistentVolume) {
-				c.pvs[pv.Name] = pv
 			}),
 			DeleteFunc: pvFilterAddDelete(func(pv v1.PersistentVolume) {
-				delete(c.pvs, pv.Name)
 			}),
 			UpdateFunc: pvFilterUpdate(func(pv v1.PersistentVolume) {
-				c.pvs[pv.Name] = pv
 			}),
 		},
 	)

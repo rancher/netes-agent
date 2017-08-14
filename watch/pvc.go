@@ -16,13 +16,10 @@ func (c *Client) startPvcWatch() chan struct{} {
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: pvcFilterAddDelete(func(pvc v1.PersistentVolumeClaim) {
-				c.pvcs[pvc.Name] = pvc
 			}),
 			DeleteFunc: pvcFilterAddDelete(func(pvc v1.PersistentVolumeClaim) {
-				delete(c.pvcs, pvc.Name)
 			}),
 			UpdateFunc: pvcFilterUpdate(func(pvc v1.PersistentVolumeClaim) {
-				c.pvcs[pvc.Name] = pvc
 			}),
 		},
 	)

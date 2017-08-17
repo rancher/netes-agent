@@ -14,7 +14,7 @@ import (
 // TODO: return erros
 func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, pod v1.Pod) (v1.Pod, error) {
 	revision := pod.Labels[labels.RevisionLabel]
-	existingPod, ok := watchClient.Pods()[pod.Name]
+	existingPod, ok := watchClient.GetPod(pod.Name)
 	if ok {
 		if existingRevision, ok := existingPod.Labels[labels.RevisionLabel]; ok {
 			if revision != existingRevision {
@@ -31,7 +31,7 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, po
 	}
 
 	for {
-		if existingPod, ok := watchClient.Pods()[pod.Name]; ok && existingPod.Spec.NodeName != "" {
+		if existingPod, ok := watchClient.GetPod(pod.Name); ok && existingPod.Spec.NodeName != "" {
 			allContainersReady := true
 			for _, containerStatus := range existingPod.Status.ContainerStatuses {
 				if !containerStatus.Ready {
@@ -47,23 +47,6 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, po
 		log.Infof("Waiting for containers of pod %s to be ready", pod.Name)
 		time.Sleep(time.Second)
 	}
-
-	// TODO
-	/*podNames := map[string]bool{}
-	for _, pod := range pods {
-		podNames[pod.Name] = true
-	}
-
-	for _, pod := range watchClient.Pods() {
-		func(pod v1.Pod) {
-			if _, ok := podNames[pod.Name]; !ok {
-				log.Infof("Pod %s shouldn't exist", pod.Name)
-				if err := deletePod(clientset, pod); err != nil {
-					log.Error(err)
-				}
-			}
-		}(pod)
-	}*/
 }
 
 func createPod(clientset *kubernetes.Clientset, pod v1.Pod) error {

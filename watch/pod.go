@@ -18,13 +18,19 @@ func (c *Client) startPodWatch() chan struct{} {
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: podFilterAddDelete(func(pod v1.Pod) {
+				c.podsMutex.Lock()
 				c.pods[pod.Name] = pod
+				c.podsMutex.Unlock()
 			}),
 			DeleteFunc: podFilterAddDelete(func(pod v1.Pod) {
+				c.podsMutex.Lock()
 				delete(c.pods, pod.Name)
+				c.podsMutex.Unlock()
 			}),
 			UpdateFunc: podFilterUpdate(func(pod v1.Pod) {
+				c.podsMutex.Lock()
 				c.pods[pod.Name] = pod
+				c.podsMutex.Unlock()
 			}),
 		},
 	)

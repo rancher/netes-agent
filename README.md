@@ -1,4 +1,4 @@
-kattle
+netes-agent
 ========
 
 A microservice that does micro things.
@@ -10,7 +10,7 @@ A microservice that does micro things.
 
 ## Running
 
-`./bin/kattle`
+`./bin/netes-agent`
 
 ## License
 Copyright (c) 2014-2016 [Rancher Labs, Inc.](http://rancher.com)

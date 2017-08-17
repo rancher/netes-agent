@@ -7,9 +7,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/rancher/kattle/events"
-	"github.com/rancher/kattle/handlers"
-	"github.com/rancher/kattle/watch"
+	"github.com/rancher/netes-agent/events"
+	"github.com/rancher/netes-agent/handlers"
+	"github.com/rancher/netes-agent/watch"
 	"github.com/urfave/cli"
 )
 
@@ -23,7 +23,7 @@ var VERSION = "v0.0.0-dev"
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "kattle"
+	app.Name = "netes-agent"
 	app.Version = VERSION
 	app.Usage = "You need help!"
 	app.Flags = []cli.Flag{

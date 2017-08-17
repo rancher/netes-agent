@@ -3,7 +3,7 @@ package watch
 import (
 	"time"
 
-	"github.com/rancher/kattle/labels"
+	"github.com/rancher/netes-agent/labels"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/pkg/api/v1"

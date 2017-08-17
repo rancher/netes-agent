@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	KattleLabel   = "io.rancher.kattle"
 	RevisionLabel = "io.rancher.revision"
 
 	GlobalLabel               = "io.rancher.scheduler.global"

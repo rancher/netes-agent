@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/rancher/go-rancher/v3"
-	"github.com/rancher/kattle/labels"
+	"github.com/rancher/netes-agent/labels"
 )
 
 // TODO: move this

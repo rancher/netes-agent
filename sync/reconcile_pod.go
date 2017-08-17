@@ -4,8 +4,8 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/rancher/kattle/labels"
-	"github.com/rancher/kattle/watch"
+	"github.com/rancher/netes-agent/labels"
+	"github.com/rancher/netes-agent/watch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"

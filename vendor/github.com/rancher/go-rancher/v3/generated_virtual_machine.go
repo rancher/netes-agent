@@ -17,6 +17,8 @@ type VirtualMachine struct {
 
 	CgroupParent string `json:"cgroupParent,omitempty" yaml:"cgroup_parent,omitempty"`
 
+	ClusterId string `json:"clusterId,omitempty" yaml:"cluster_id,omitempty"`
+
 	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
 
 	Count int64 `json:"count,omitempty" yaml:"count,omitempty"`
@@ -198,6 +200,8 @@ type VirtualMachine struct {
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
 	StopSignal string `json:"stopSignal,omitempty" yaml:"stop_signal,omitempty"`
+
+	StopTimeout int64 `json:"stopTimeout,omitempty" yaml:"stop_timeout,omitempty"`
 
 	StorageOpt map[string]interface{} `json:"storageOpt,omitempty" yaml:"storage_opt,omitempty"`
 

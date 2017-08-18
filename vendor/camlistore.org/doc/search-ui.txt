@@ -1,1 +1,0 @@
-Please see https://camlistore.org/doc/search-ui

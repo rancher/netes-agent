@@ -1,0 +1,6 @@
+#!/bin/bash
+set -e
+
+pkill -f hyperkube
+sleep 5
+docker rm -f $(docker ps -f label=io.kubernetes.container.name -a -q)

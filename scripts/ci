@@ -4,6 +4,8 @@ set -e
 cd $(dirname $0)
 
 ./build
+./run-kubernetes
 ./test
+./cleanup
 ./validate
 ./package

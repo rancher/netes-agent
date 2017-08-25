@@ -23,8 +23,8 @@ func NewClient(clientset *kubernetes.Clientset) *Client {
 
 func (c *Client) Start() {
 	c.startPodWatch()
-	c.startPvWatch()
-	c.startPvcWatch()
+	//c.startPvWatch()
+	//c.startPvcWatch()
 }
 
 func (c *Client) GetPod(podName string) (v1.Pod, bool) {

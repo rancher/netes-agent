@@ -13,11 +13,15 @@ type Register struct {
 
 	AgentUriFormat string `json:"agentUriFormat,omitempty" yaml:"agent_uri_format,omitempty"`
 
+	ClusterId string `json:"clusterId,omitempty" yaml:"cluster_id,omitempty"`
+
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
+	K8sClientConfig *K8sClientConfig `json:"k8sClientConfig,omitempty" yaml:"k8s_client_config,omitempty"`
 
 	Key string `json:"key,omitempty" yaml:"key,omitempty"`
 

@@ -21,7 +21,7 @@ func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploy
 		return err
 	}*/
 
-	pod := PodFromDeploymentUnit(deploymentUnit)
+	pod := podFromDeploymentUnit(deploymentUnit)
 	createdPod, err := reconcilePod(clientset, watchClient, pod)
 	if err != nil {
 		return client.DeploymentSyncResponse{}, err
@@ -32,7 +32,7 @@ func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploy
 }
 
 // TODO
-func Remove(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest) error {
+func Remove(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest) (client.DeploymentSyncResponse, error) {
 	log.Info("Remove")
-	return nil
+	return client.DeploymentSyncResponse{}, nil
 }

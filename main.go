@@ -2,14 +2,10 @@ package main
 
 import (
 	"os"
-	"time"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	"github.com/rancher/netes-agent/events"
-	"github.com/rancher/netes-agent/handlers"
-	"github.com/rancher/netes-agent/watch"
+	log "github.com/Sirupsen/logrus"
+	"github.com/rancher/go-rancher/v3"
+	"github.com/rancher/netes-agent/manager"
 	"github.com/urfave/cli"
 )
 
@@ -25,60 +21,37 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "netes-agent"
 	app.Version = VERSION
-	app.Usage = "You need help!"
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name: "kubernetes-master",
-		},
-		cli.StringFlag{
-			Name: "username",
-		},
-		cli.StringFlag{
-			Name: "password",
-		},
-		cli.StringFlag{
-			Name: "token",
-		},
-	}
+	app.Flags = []cli.Flag{}
 	app.Action = action
 	if err := app.Run(os.Args); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
 func action(c *cli.Context) error {
-	kubernetesURL := c.String("kubernetes-master")
-	username := c.String("username")
-	password := c.String("password")
-	token := c.String("token")
-	clientset, err := createKubernetesClient(kubernetesURL, username, password, token)
-	if err != nil {
-		return err
-	}
-
-	watchClient := watch.NewClient(clientset)
-	watchClient.Start()
-
-	time.Sleep(5 * time.Second)
-
-	handlers.WatchClient = watchClient
-	handlers.Clientset = clientset
-
 	cattleURL := os.Getenv(cattleURLEnv)
 	cattleAccessKey := os.Getenv(cattleAccessKeyEnv)
 	cattleSecretKey := os.Getenv(cattleSecretKeyEnv)
 
-	return events.Listen(cattleURL, cattleAccessKey, cattleSecretKey, 250)
-}
-
-func createKubernetesClient(url, username, password, token string) (*kubernetes.Clientset, error) {
-	return kubernetes.NewForConfig(&rest.Config{
-		Host:        url,
-		Username:    username,
-		Password:    password,
-		BearerToken: token,
-		TLSClientConfig: rest.TLSClientConfig{
-			Insecure: true,
-		},
+	rancherClient, err := client.NewRancherClient(&client.ClientOpts{
+		Url:       cattleURL,
+		AccessKey: cattleAccessKey,
+		SecretKey: cattleSecretKey,
 	})
+	if err != nil {
+		return err
+	}
+
+	clusters, err := rancherClient.Cluster.List(&client.ListOpts{})
+	if err != nil {
+		return err
+	}
+
+	manager := manager.NewManager(cattleURL, cattleAccessKey, cattleSecretKey)
+
+	if err := manager.SyncClusters(clusters.Data); err != nil {
+		return err
+	}
+
+	return manager.Listen(250)
 }

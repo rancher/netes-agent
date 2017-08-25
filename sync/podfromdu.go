@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/rancher/go-rancher/v3"
@@ -34,9 +33,8 @@ var (
 	}
 )
 
-func PodFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
-	//containers := []v1.Container{rancherPauseContainer}
-	var containers []v1.Container
+func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
+	containers := []v1.Container{rancherPauseContainer}
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
 	}
@@ -67,7 +65,6 @@ func getContainer(container client.Container) v1.Container {
 		Env:             getEnvironment(container),
 		SecurityContext: getSecurityContext(container),
 		VolumeMounts:    getVolumeMounts(container),
-		LivenessProbe:   getLivenessProbe(container),
 	}
 }
 
@@ -93,56 +90,6 @@ func getHostNetwork(deploymentUnit client.DeploymentSyncRequest) bool {
 		}
 	}
 	return false
-}
-
-func getLivenessProbe(container client.Container) *v1.Probe {
-	healthcheck := container.HealthCheck
-	if healthcheck == nil {
-		return nil
-	}
-
-	timeoutSeconds := int32(healthcheck.ResponseTimeout / 1000)
-	if timeoutSeconds == 0 {
-		timeoutSeconds = 1
-	}
-
-	periodSeconds := int32(healthcheck.Interval / 1000)
-	if periodSeconds == 0 {
-		periodSeconds = 1
-	}
-
-	probe := v1.Probe{
-		TimeoutSeconds:   timeoutSeconds,
-		PeriodSeconds:    periodSeconds,
-		SuccessThreshold: int32(healthcheck.HealthyThreshold),
-		FailureThreshold: int32(healthcheck.UnhealthyThreshold),
-	}
-	port := intstr.IntOrString{
-		IntVal: int32(healthcheck.Port),
-	}
-
-	if healthcheck.RequestLine == "" {
-		probe.Handler = v1.Handler{
-			TCPSocket: &v1.TCPSocketAction{
-				Port: port,
-			},
-		}
-	} else {
-		parts := strings.Split(healthcheck.RequestLine, " ")
-		if len(parts) < 3 {
-			return nil
-		}
-		// TODO: first and third parts completely ignored
-		path := parts[1]
-		probe.Handler = v1.Handler{
-			HTTPGet: &v1.HTTPGetAction{
-				Path: path,
-				Port: port,
-			},
-		}
-	}
-
-	return &probe
 }
 
 func getSecurityContext(container client.Container) *v1.SecurityContext {

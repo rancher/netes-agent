@@ -3,11 +3,9 @@ package sync
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/pkg/api/v1"
-
 	"github.com/rancher/go-rancher/v3"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 func TestGetPodSpec(t *testing.T) {
@@ -45,50 +43,6 @@ func TestGetPodSpec(t *testing.T) {
 		HostNetwork:   true,
 		HostPID:       true,
 		DNSPolicy:     v1.DNSDefault,
-	})
-}
-
-func TestLivenessProbe(t *testing.T) {
-	livenessProbe := getLivenessProbe(client.Container{
-		HealthCheck: &client.InstanceHealthCheck{
-			ResponseTimeout:    2000,
-			Interval:           2000,
-			HealthyThreshold:   4,
-			UnhealthyThreshold: 4,
-		},
-	})
-	assert.Equal(t, livenessProbe.TimeoutSeconds, int32(2))
-	assert.Equal(t, livenessProbe.PeriodSeconds, int32(2))
-	assert.Equal(t, livenessProbe.SuccessThreshold, int32(4))
-	assert.Equal(t, livenessProbe.FailureThreshold, int32(4))
-
-	livenessProbe = getLivenessProbe(client.Container{
-		HealthCheck: &client.InstanceHealthCheck{
-			ResponseTimeout: 500,
-			Interval:        500,
-		},
-	})
-	assert.Equal(t, livenessProbe.TimeoutSeconds, int32(1))
-	assert.Equal(t, livenessProbe.PeriodSeconds, int32(1))
-
-	livenessProbe = getLivenessProbe(client.Container{
-		HealthCheck: &client.InstanceHealthCheck{
-			Port: 80,
-		},
-	})
-	assert.Equal(t, livenessProbe.TCPSocket.Port, intstr.IntOrString{
-		IntVal: 80,
-	})
-
-	livenessProbe = getLivenessProbe(client.Container{
-		HealthCheck: &client.InstanceHealthCheck{
-			RequestLine: "GET /healthcheck HTTP/1.0",
-			Port:        80,
-		},
-	})
-	assert.Equal(t, livenessProbe.HTTPGet.Path, "/healthcheck")
-	assert.Equal(t, livenessProbe.HTTPGet.Port, intstr.IntOrString{
-		IntVal: 80,
 	})
 }
 

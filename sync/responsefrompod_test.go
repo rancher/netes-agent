@@ -10,7 +10,7 @@ import (
 )
 
 func TestResponseFromPod(t *testing.T) {
-	response, err := responseFromPod(v1.Pod{
+	response := responseFromPod(v1.Pod{
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
 				v1.ContainerStatus{
@@ -22,7 +22,6 @@ func TestResponseFromPod(t *testing.T) {
 			PodIP: "0.0.0.0",
 		},
 	})
-	assert.Nil(t, err)
 	assert.Equal(t, response, client.DeploymentSyncResponse{
 		InstanceStatus: []client.InstanceStatus{
 			client.InstanceStatus{

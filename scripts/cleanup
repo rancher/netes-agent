@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
 
-pkill -f hyperkube
+pkill -f hyperkube || true
 sleep 5
-docker rm -f $(docker ps -f label=io.kubernetes.container.name -a -q)
+docker rm -f $(docker ps -f label=io.kubernetes.container.name -a -q) || true

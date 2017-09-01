@@ -9,19 +9,30 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
-	cattleURLEnv       = "CATTLE_URL"
-	cattleAccessKeyEnv = "CATTLE_ACCESS_KEY"
-	cattleSecretKeyEnv = "CATTLE_SECRET_KEY"
-)
-
 var VERSION = "v0.0.0-dev"
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "netes-agent"
 	app.Version = VERSION
-	app.Flags = []cli.Flag{}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:   "access-key",
+			EnvVar: "CATTLE_ACCESS_KEY",
+			Usage:  "Rancher access key",
+		},
+		cli.StringFlag{
+			Name:   "secret-key",
+			EnvVar: "CATTLE_SECRET_KEY",
+			Usage:  "Rancher secret key",
+		},
+		cli.StringFlag{
+			Name:   "url",
+			Value: "http://localhost:8080/v3",
+			EnvVar: "CATTLE_URL",
+			Usage:  "Rancher URL",
+		},
+	}
 	app.Action = action
 	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
@@ -29,29 +40,30 @@ func main() {
 }
 
 func action(c *cli.Context) error {
-	cattleURL := os.Getenv(cattleURLEnv)
-	cattleAccessKey := os.Getenv(cattleAccessKeyEnv)
-	cattleSecretKey := os.Getenv(cattleSecretKeyEnv)
-
 	rancherClient, err := client.NewRancherClient(&client.ClientOpts{
-		Url:       cattleURL,
-		AccessKey: cattleAccessKey,
-		SecretKey: cattleSecretKey,
+		Url:       c.String("url"),
+		AccessKey: os.Getenv("access-key"),
+		SecretKey: os.Getenv("secret-key"),
 	})
 	if err != nil {
 		return err
 	}
 
-	clusters, err := rancherClient.Cluster.List(&client.ListOpts{})
+	clusters, err := rancherClient.Cluster.List(&client.ListOpts{
+		Filters: map[string]interface{}{
+			"removed_null": nil,
+			"state_ne": "removing",
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	manager := manager.NewManager(cattleURL, cattleAccessKey, cattleSecretKey)
+	manager := manager.New(rancherClient)
 
 	if err := manager.SyncClusters(clusters.Data); err != nil {
 		return err
 	}
 
-	return manager.Listen(250)
+	return manager.Listen()
 }

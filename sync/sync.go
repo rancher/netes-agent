@@ -27,8 +27,7 @@ func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploy
 		return client.DeploymentSyncResponse{}, err
 	}
 
-	response := responseFromPod(createdPod)
-	return addHostUuidToResponse(clientset, createdPod, response)
+	return responseFromPod(createdPod), nil
 }
 
 // TODO

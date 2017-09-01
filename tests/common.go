@@ -37,7 +37,7 @@ func init() {
 		panic(err)
 	}
 
-	testManager = manager.NewManager("", "", "")
+	testManager = manager.New(nil)
 	testManager.SyncClusters([]client.Cluster{
 		{
 			K8sClientConfig: &client.K8sClientConfig{

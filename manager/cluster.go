@@ -22,7 +22,7 @@ func (m *Manager) SyncClusters(clusters []client.Cluster) error {
 }
 
 func (m *Manager) addCluster(cluster client.Cluster) error {
-	if _, ok := m.clientsets[cluster.Id]; ok {
+	if _, ok := m.clientsets.Load(cluster.Id); ok {
 		return nil
 	}
 
@@ -47,10 +47,10 @@ func (m *Manager) addCluster(cluster client.Cluster) error {
 		return err
 	}
 
-	m.clientsets[cluster.Id] = clientset
+	m.clientsets.Store(cluster.Id, clientset)
 	watchClient := watch.NewClient(clientset)
 	watchClient.Start()
-	m.watchClients[cluster.Id] = watchClient
+	m.watchClients.Store(cluster.Id, watchClient)
 
 	log.Infof("Registered cluster %s (%s) at %s", cluster.Name, cluster.Id, config.Host)
 
@@ -68,6 +68,13 @@ func (m *Manager) getHost(cluster client.Cluster) string {
 }
 
 func (m *Manager) removeCluster(cluster client.Cluster) error {
+	m.clientsets.Delete(cluster.Id)
+	watchClient, ok := m.watchClients.Load(cluster.Id)
+	if !ok {
+		return nil
+	}
+	watchClient.(*watch.Client).Stop()
+	m.watchClients.Delete(cluster.Id)
 	return nil
 }
 

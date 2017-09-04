@@ -6,12 +6,38 @@ import (
 	"github.com/rancher/go-rancher/v3"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/pkg/api/v1"
+	"github.com/rancher/netes-agent/labels"
 )
+
+func TestGetLabels(t *testing.T) {
+	assert.Equal(t, getLabels(client.DeploymentSyncRequest{
+		Revision: "revision",
+		Containers: []client.Container{
+			{
+				Name: "c1",
+				Labels: map[string]interface{}{
+					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
+					"a": "b",
+				},
+			},
+			{
+				Name: "c2",
+				Labels: map[string]interface{}{
+					"c": "d",
+				},
+			},
+		},
+	}), map[string]string{
+		labels.RevisionLabel: "revision",
+		"a": "b",
+		"c2/c": "d",
+	})
+}
 
 func TestGetPodSpec(t *testing.T) {
 	assert.Equal(t, getPodSpec(client.DeploymentSyncRequest{
 		Containers: []client.Container{
-			client.Container{},
+			{},
 		},
 	}), v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
@@ -20,7 +46,10 @@ func TestGetPodSpec(t *testing.T) {
 
 	assert.Equal(t, getPodSpec(client.DeploymentSyncRequest{
 		Containers: []client.Container{
-			client.Container{
+			{
+				Labels: map[string]interface{}{
+					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
+				},
 				RestartPolicy: &client.RestartPolicy{
 					Name: "always",
 				},
@@ -30,19 +59,21 @@ func TestGetPodSpec(t *testing.T) {
 			},
 		},
 		Networks: []client.Network{
-			client.Network{
+			{
 				Resource: client.Resource{
 					Id: "1",
 				},
 				Kind: hostNetworkingKind,
 			},
 		},
+		NodeName: "node1",
 	}), v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
 		HostIPC:       true,
 		HostNetwork:   true,
 		HostPID:       true,
 		DNSPolicy:     v1.DNSDefault,
+		NodeName:      "node1",
 	})
 }
 
@@ -74,14 +105,14 @@ func TestSecurityContext(t *testing.T) {
 func TestGetVolumes(t *testing.T) {
 	assert.Equal(t, getVolumes(client.DeploymentSyncRequest{
 		Containers: []client.Container{
-			client.Container{
+			{
 				DataVolumes: []string{
 					"/host/path:/container/path",
 				},
 			},
 		},
 	}), []v1.Volume{
-		v1.Volume{
+		{
 			Name: "host-path-volume",
 			VolumeSource: v1.VolumeSource{
 				HostPath: &v1.HostPathVolumeSource{
@@ -92,7 +123,7 @@ func TestGetVolumes(t *testing.T) {
 	})
 	assert.Equal(t, len(getVolumes(client.DeploymentSyncRequest{
 		Containers: []client.Container{
-			client.Container{
+			{
 				DataVolumes: []string{
 					"/anonymous/volume",
 				},
@@ -107,7 +138,7 @@ func TestGetVolumeMounts(t *testing.T) {
 			"/host/path:/container/path",
 		},
 	}), []v1.VolumeMount{
-		v1.VolumeMount{
+		{
 			Name:      "host-path-volume",
 			MountPath: "/container/path",
 		},

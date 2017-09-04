@@ -11,26 +11,20 @@ import (
 )
 
 func (c *Client) startPodWatch() chan struct{} {
-	watchlist := cache.NewListWatchFromClient(c.clientset.Core().RESTClient(), "pods", v1.NamespaceDefault, fields.Everything())
+	watchlist := cache.NewListWatchFromClient(c.clientset.Core().RESTClient(), "pods", v1.NamespaceAll, fields.Everything())
 	_, controller := cache.NewInformer(
 		watchlist,
 		&v1.Pod{},
 		time.Second*0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: podFilterAddDelete(func(pod v1.Pod) {
-				c.podsMutex.Lock()
-				c.pods[pod.Name] = pod
-				c.podsMutex.Unlock()
+				c.addPod(pod)
 			}),
 			DeleteFunc: podFilterAddDelete(func(pod v1.Pod) {
-				c.podsMutex.Lock()
-				delete(c.pods, pod.Name)
-				c.podsMutex.Unlock()
+				c.deletePod(pod)
 			}),
 			UpdateFunc: podFilterUpdate(func(pod v1.Pod) {
-				c.podsMutex.Lock()
-				c.pods[pod.Name] = pod
-				c.podsMutex.Unlock()
+				c.addPod(pod)
 			}),
 		},
 	)

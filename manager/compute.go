@@ -28,17 +28,17 @@ func (m *Manager) callDeploymentSyncHandler(ignoreUnknown bool, event *events.Ev
 		errUnknown = nil
 	}
 
-	clientset, ok := m.clientsets[request.ClusterId]
+	clientset, ok := m.clientsets.Load(request.ClusterId)
 	if !ok {
 		return emptyReply(event), errUnknown
 	}
 
-	watchClient, ok := m.watchClients[request.ClusterId]
+	watchClient, ok := m.watchClients.Load(request.ClusterId)
 	if !ok {
 		return emptyReply(event), errUnknown
 	}
 
-	response, err := handler(clientset, watchClient, request)
+	response, err := handler(clientset.(*kubernetes.Clientset), watchClient.(*watch.Client), request)
 	return createPublish(response, event), err
 }
 

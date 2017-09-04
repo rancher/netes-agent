@@ -13,9 +13,14 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 			continue
 		}
 
+		containerUuid, ok := pod.Annotations[getContainerUuidAnnotationName(containerStatus.Name)]
+		if !ok {
+			continue
+		}
+
 		instanceStatuses = append(instanceStatuses, client.InstanceStatus{
 			ExternalId:       containerStatus.ContainerID,
-			InstanceUuid:     containerStatus.Name,
+			InstanceUuid:     containerUuid,
 			PrimaryIpAddress: pod.Status.PodIP,
 		})
 	}

@@ -42,8 +42,8 @@ func main() {
 func action(c *cli.Context) error {
 	rancherClient, err := client.NewRancherClient(&client.ClientOpts{
 		Url:       c.String("url"),
-		AccessKey: os.Getenv("access-key"),
-		SecretKey: os.Getenv("secret-key"),
+		AccessKey: c.String("access-key"),
+		SecretKey: c.String("secret-key"),
 	})
 	if err != nil {
 		return err

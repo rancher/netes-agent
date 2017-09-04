@@ -28,7 +28,6 @@ func TestResponseFromPod(t *testing.T) {
 				ExternalId:       "docker://id",
 				InstanceUuid:     "00000000-0000-0000-0000-000000000000",
 				PrimaryIpAddress: "0.0.0.0",
-				State:            "running",
 			},
 		},
 	})

@@ -9,27 +9,55 @@ import (
 
 type Client struct {
 	clientset *kubernetes.Clientset
-	pods      map[string]v1.Pod
+	pods      map[string]map[string]v1.Pod
 	podsMutex sync.RWMutex
+	podsWatchChan  chan struct{}
 }
 
 func NewClient(clientset *kubernetes.Clientset) *Client {
 	return &Client{
 		clientset,
-		make(map[string]v1.Pod),
+		make(map[string]map[string]v1.Pod),
 		sync.RWMutex{},
+		nil,
 	}
 }
 
 func (c *Client) Start() {
-	c.startPodWatch()
-	//c.startPvWatch()
-	//c.startPvcWatch()
+	c.podsWatchChan = c.startPodWatch()
 }
 
-func (c *Client) GetPod(podName string) (v1.Pod, bool) {
+func (c *Client) Stop() {
+	if c.podsWatchChan != nil {
+		c.podsWatchChan <- struct{}{}
+	}
+}
+
+func (c *Client) GetPod(namespace, podName string) (v1.Pod, bool) {
 	c.podsMutex.RLock()
-	pod, ok := c.pods[podName]
+	namespacePods, ok := c.pods[namespace]
+	if !ok {
+		return v1.Pod{}, false
+	}
+	pod, ok := namespacePods[podName]
 	c.podsMutex.RUnlock()
 	return pod, ok
+}
+
+func (c *Client) addPod(pod v1.Pod) {
+	c.podsMutex.Lock()
+	if _, ok := c.pods[pod.Namespace]; !ok {
+		c.pods[pod.Namespace] = make(map[string]v1.Pod)
+	}
+	c.pods[pod.Namespace][pod.Name] = pod
+	c.podsMutex.Unlock()
+}
+
+func (c *Client) deletePod(pod v1.Pod) {
+	c.podsMutex.Lock()
+	if _, ok := c.pods[pod.Namespace]; !ok {
+		return
+	}
+	delete(c.pods[pod.Namespace], pod.Name)
+	c.podsMutex.Unlock()
 }

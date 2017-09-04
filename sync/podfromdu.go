@@ -12,14 +12,6 @@ import (
 	"github.com/rancher/netes-agent/labels"
 )
 
-// TODO: move this
-func Primary(d client.DeploymentSyncRequest) client.Container {
-	if len(d.Containers) > -0 {
-		return d.Containers[0]
-	}
-	return client.Container{}
-}
-
 const (
 	rancherPauseContainerName = "rancher-pause"
 	hostNetworkingKind        = "dockerHost"
@@ -33,6 +25,20 @@ var (
 	}
 )
 
+// TODO: move this
+func Primary(d client.DeploymentSyncRequest) client.Container {
+	if len(d.Containers) == 1 {
+		return d.Containers[0]
+	}
+	for _, container := range d.Containers {
+		value, ok := container.Labels[labels.ServiceLaunchConfig]
+		if ok && value == labels.ServicePrimaryLaunchConfig {
+			return container
+		}
+	}
+	return client.Container{}
+}
+
 func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 	containers := []v1.Container{rancherPauseContainer}
 	for _, container := range deploymentUnit.Containers {
@@ -44,10 +50,10 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploymentUnit.DeploymentUnitUuid,
-			Labels: map[string]string{
-				labels.RevisionLabel: deploymentUnit.Revision,
-			},
+			Name: getPodName(deploymentUnit),
+			Namespace: deploymentUnit.Namespace,
+			Labels: getLabels(deploymentUnit),
+			Annotations: getAnnotations(deploymentUnit),
 		},
 		Spec: podSpec,
 	}
@@ -55,7 +61,7 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 func getContainer(container client.Container) v1.Container {
 	return v1.Container{
-		Name:            container.Uuid,
+		Name:            transformContainerName(container.Name),
 		Image:           container.Image,
 		Command:         container.EntryPoint,
 		Args:            container.Command,
@@ -68,6 +74,49 @@ func getContainer(container client.Container) v1.Container {
 	}
 }
 
+func getPodName(deploymentUnit client.DeploymentSyncRequest) string {
+	return fmt.Sprintf("%s-%s", transformContainerName(Primary(deploymentUnit).Name), deploymentUnit.DeploymentUnitUuid[:8])
+}
+
+func transformContainerName(name string) string {
+	return strings.ToLower(name)
+}
+
+func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
+	return map[string]string{
+		labels.RevisionLabel: deploymentUnit.Revision,
+		labels.DeploymentUuidLabel: deploymentUnit.DeploymentUnitUuid,
+	}
+}
+
+func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]string {
+	primary := Primary(deploymentUnit)
+	annotations := map[string]string{}
+
+	for k, v := range primary.Labels {
+		if k != labels.ServiceLaunchConfig {
+			annotations[k] = fmt.Sprint(v)
+		}
+	}
+	annotations[getContainerUuidAnnotationName(primary.Name)] = primary.Uuid
+
+	for _, container := range deploymentUnit.Containers {
+		if container.Name == primary.Name {
+			continue
+		}
+		for k, v := range container.Labels {
+			annotations[fmt.Sprintf("%s/%s", transformContainerName(container.Name), k)] = fmt.Sprint(v)
+		}
+		annotations[getContainerUuidAnnotationName(container.Name)] = container.Uuid
+	}
+
+	return annotations
+}
+
+func getContainerUuidAnnotationName(containerName string) string {
+	return fmt.Sprintf("%s/%s", transformContainerName(containerName), labels.ContainerUuidLabel)
+}
+
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyNever,
@@ -75,8 +124,7 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 		HostIPC:       Primary(deploymentUnit).IpcMode == "host",
 		HostPID:       Primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:     v1.DNSDefault,
-		// TODO
-		//NodeName:      deploymentUnit.Host.Name,
+		NodeName:      deploymentUnit.NodeName,
 		NodeSelector: getNodeSelector(Primary(deploymentUnit)),
 		Volumes:      getVolumes(deploymentUnit),
 	}

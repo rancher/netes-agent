@@ -5,24 +5,19 @@ import (
 	"github.com/rancher/event-subscriber/events"
 )
 
-func (m *Manager) Listen(workerCount int) error {
-	logrus.Infof("Listening for events on %s", m.cattleURL)
+func (m *Manager) Listen() error {
+	logrus.Infof("Listening for events on %s", m.rancherClient.GetOpts().Url)
 
-	pingConfig := events.PingConfig{
-		SendPingInterval:  5000,
-		CheckPongInterval: 5000,
-		MaxPongWait:       60000,
-	}
-	router, err := events.NewEventRouter("", 0, m.cattleURL, m.cattleAccessKey, m.cattleSecretKey, nil, map[string]events.EventHandler{
-		"external.compute.instance.activate": wrapHandler(m.HandleComputeInstanceActivate),
-		"external.compute.instance.remove":   wrapHandler(m.HandleComputeInstanceRemove),
-		"cluster.create":                     m.handleClusterCreateOrUpdate,
-		"cluster.remove":                     m.handleClusterRemove,
-		"cluster.update":                     m.handleClusterCreateOrUpdate,
-	}, "", workerCount, pingConfig)
+	router, err := events.NewEventRouter(m.rancherClient, 250, map[string]events.EventHandler{
+		"instance.start":   wrapHandler(m.HandleComputeInstanceActivate),
+		"instance.remove":  wrapHandler(m.HandleComputeInstanceRemove),
+		"cluster.activate": wrapHandler(m.handleClusterCreateOrUpdate),
+		"cluster.remove":   wrapHandler(m.handleClusterRemove),
+		"cluster.update":   wrapHandler(m.handleClusterCreateOrUpdate),
+	})
 	if err != nil {
 		return err
 	}
 
-	return router.StartWithoutCreate(nil)
+	return router.StartHandler("k8s-cluster-service", nil)
 }

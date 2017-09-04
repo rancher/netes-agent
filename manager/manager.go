@@ -1,27 +1,30 @@
 package manager
 
 import (
-	"github.com/rancher/netes-agent/watch"
-	"k8s.io/client-go/kubernetes"
+	"github.com/rancher/go-rancher/v3"
+	"golang.org/x/sync/syncmap"
+	"net/url"
 )
 
 type Manager struct {
-	watchClients    map[string]*watch.Client
-	clientsets      map[string]*kubernetes.Clientset
-	cattleURL       string
-	cattleAccessKey string
-	cattleSecretKey string
-
-	// TODO: remove once requests have cluster info
-	currentClusterId string
+	watchClients       syncmap.Map
+	clientsets         syncmap.Map
+	rancherClient      *client.RancherClient
+	clusterOverrideURL string
 }
 
-func NewManager(cattleURL, cattleAccessKey, cattleSecretKey string) *Manager {
-	return &Manager{
-		watchClients:    make(map[string]*watch.Client),
-		clientsets:      make(map[string]*kubernetes.Clientset),
-		cattleURL:       cattleURL,
-		cattleAccessKey: cattleAccessKey,
-		cattleSecretKey: cattleSecretKey,
+func New(rancherClient *client.RancherClient) *Manager {
+	m := &Manager{
+		watchClients:  syncmap.Map{},
+		clientsets:    syncmap.Map{},
+		rancherClient: rancherClient,
 	}
+
+	if m.rancherClient != nil {
+		u, _ := url.Parse(m.rancherClient.GetOpts().Url)
+		u.Path = "/k8s/clusters/"
+		m.clusterOverrideURL = u.String()
+	}
+
+	return m
 }

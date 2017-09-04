@@ -2,10 +2,8 @@ package manager
 
 import (
 	"fmt"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/fatih/structs"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
 )
@@ -16,30 +14,24 @@ func wrapHandler(handler func(event *events.Event) (*client.Publish, error)) fun
 		if err == nil {
 			return reply(publish, event, apiClient)
 		} else {
-			return reply(publish, event, apiClient)
+			return err
 		}
 	}
 }
 
-func createPublish(response client.DeploymentSyncResponse, responseErr error, event *events.Event) *client.Publish {
-	reply := client.Publish{
-		ResourceId: event.ResourceID,
-		PreviousIds: []string{
-			event.ID,
-		},
-		ResourceType: event.ResourceType,
-		Name:         event.ReplyTo,
-		Time:         time.Now().UnixNano() / int64(time.Millisecond),
+func emptyReply(event *events.Event) *client.Publish {
+	return &client.Publish{
+		PreviousId: event.ID,
+		Name:       event.ReplyTo,
 	}
+}
 
-	if responseErr == nil {
-		reply.Data = structs.Map(response)
-	} else {
-		reply.Transitioning = "true"
-		reply.TransitioningMessage = responseErr.Error()
+func createPublish(response client.DeploymentSyncResponse, event *events.Event) *client.Publish {
+	reply := emptyReply(event)
+	reply.Data = map[string]interface{}{
+		"deploymentSyncResponse": response,
 	}
-
-	return &reply
+	return reply
 }
 
 func reply(publish *client.Publish, event *events.Event, apiClient *client.RancherClient) error {

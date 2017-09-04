@@ -10,6 +10,7 @@ import (
 
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
+	"github.com/rancher/netes-agent/utils"
 )
 
 const (
@@ -195,7 +196,7 @@ func getVolumes(deploymentUnit client.DeploymentSyncRequest) []v1.Volume {
 			}
 
 			volumes = append(volumes, v1.Volume{
-				Name: createBindMountVolumeName(hostPath),
+				Name: getBindMountVolumeName(hostPath),
 				VolumeSource: v1.VolumeSource{
 					HostPath: &v1.HostPathVolumeSource{
 						Path: hostPath,
@@ -239,7 +240,7 @@ func getVolumeMounts(container client.Container) []v1.VolumeMount {
 		}
 
 		volumeMounts = append(volumeMounts, v1.VolumeMount{
-			Name:      createBindMountVolumeName(hostPath),
+			Name:      getBindMountVolumeName(hostPath),
 			MountPath: containerPath,
 		})
 	}
@@ -254,8 +255,6 @@ func getVolumeMounts(container client.Container) []v1.VolumeMount {
 	return volumeMounts
 }
 
-func createBindMountVolumeName(path string) string {
-	path = strings.TrimLeft(path, "/")
-	path = strings.Replace(path, "/", "-", -1)
-	return fmt.Sprintf("%s-%s", path, "volume")
+func getBindMountVolumeName(path string) string {
+	return utils.Hash(path)
 }

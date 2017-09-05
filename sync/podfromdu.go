@@ -15,7 +15,7 @@ import (
 
 const (
 	rancherPauseContainerName = "rancher-pause"
-	hostNetworkingKind        = "dockerHost"
+	hostNetworkingKind        = "host"
 )
 
 var (

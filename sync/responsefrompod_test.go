@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"k8s.io/client-go/pkg/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rancher/go-rancher/v3"
 	"github.com/stretchr/testify/assert"
@@ -11,6 +12,9 @@ import (
 
 func TestResponseFromPod(t *testing.T) {
 	response := responseFromPod(v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "podname",
+		},
 		Status: v1.PodStatus{
 			ContainerStatuses: []v1.ContainerStatus{
 				{
@@ -23,6 +27,7 @@ func TestResponseFromPod(t *testing.T) {
 		},
 	})
 	assert.Equal(t, response, client.DeploymentSyncResponse{
+		ExternalId: "podname",
 		InstanceStatus: []client.InstanceStatus{
 			{
 				ExternalId:       "docker://id",

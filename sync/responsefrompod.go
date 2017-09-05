@@ -26,6 +26,7 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 	}
 
 	return client.DeploymentSyncResponse{
+		ExternalId:     pod.Name,
 		NodeName:       pod.Spec.NodeName,
 		InstanceStatus: instanceStatuses,
 	}

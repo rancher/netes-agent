@@ -126,8 +126,9 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 		HostPID:       Primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:     v1.DNSDefault,
 		NodeName:      deploymentUnit.NodeName,
-		NodeSelector: getNodeSelector(Primary(deploymentUnit)),
-		Volumes:      getVolumes(deploymentUnit),
+		NodeSelector:  getNodeSelector(Primary(deploymentUnit)),
+		HostAliases:   getHostAliases(Primary(deploymentUnit)),
+		Volumes:       getVolumes(deploymentUnit),
 	}
 }
 
@@ -158,6 +159,23 @@ func getSecurityContext(container client.Container) *v1.SecurityContext {
 			Drop: capDrop,
 		},
 	}
+}
+
+func getHostAliases(container client.Container) []v1.HostAlias {
+	var hostAliases []v1.HostAlias
+	for _, extraHost := range container.ExtraHosts {
+		parts := strings.SplitN(extraHost, ":", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		hostAliases = append(hostAliases, v1.HostAlias{
+			IP: parts[1],
+			Hostnames: []string{
+				parts[0],
+			},
+		})
+	}
+	return hostAliases
 }
 
 func getNodeSelector(container client.Container) map[string]string {
@@ -196,7 +214,7 @@ func getVolumes(deploymentUnit client.DeploymentSyncRequest) []v1.Volume {
 			}
 
 			volumes = append(volumes, v1.Volume{
-				Name: getBindMountVolumeName(hostPath),
+				Name: utils.Hash(hostPath),
 				VolumeSource: v1.VolumeSource{
 					HostPath: &v1.HostPathVolumeSource{
 						Path: hostPath,
@@ -253,7 +271,7 @@ func getVolumeMounts(container client.Container) []v1.VolumeMount {
 		}
 
 		volumeMounts = append(volumeMounts, v1.VolumeMount{
-			Name:      getBindMountVolumeName(hostPath),
+			Name:      utils.Hash(hostPath),
 			MountPath: containerPath,
 		})
 	}
@@ -273,8 +291,4 @@ func getVolumeMounts(container client.Container) []v1.VolumeMount {
 	}
 
 	return volumeMounts
-}
-
-func getBindMountVolumeName(path string) string {
-	return utils.Hash(path)
 }

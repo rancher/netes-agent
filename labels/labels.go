@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	RevisionLabel = "io.rancher.revision"
+	RevisionLabel       = "io.rancher.revision"
 	DeploymentUuidLabel = "io.rancher.deployment.uuid"
-	ContainerUuidLabel = "io.rancher.container.uuid"
+	ContainerUuidLabel  = "io.rancher.container.uuid"
 
 	GlobalLabel               = "io.rancher.scheduler.global"
 	HostAffinityLabel         = "io.rancher.scheduler.affinity:host_label"
@@ -16,7 +16,7 @@ const (
 	HostSoftAffinityLabel     = "io.rancher.scheduler.affinity:host_label_soft"
 	HostSoftAntiAffinityLabel = "io.rancher.scheduler.affinity:host_label_soft_ne"
 
-	ServiceLaunchConfig = "io.rancher.service.launch.config"
+	ServiceLaunchConfig        = "io.rancher.service.launch.config"
 	ServicePrimaryLaunchConfig = "io.rancher.service.primary.launch.config"
 )
 

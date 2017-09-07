@@ -28,7 +28,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:   "url",
-			Value: "http://localhost:8080/v3",
+			Value:  "http://localhost:8080/v3",
 			EnvVar: "CATTLE_URL",
 			Usage:  "Rancher URL",
 		},
@@ -52,7 +52,7 @@ func action(c *cli.Context) error {
 	clusters, err := rancherClient.Cluster.List(&client.ListOpts{
 		Filters: map[string]interface{}{
 			"removed_null": nil,
-			"state_ne": "removing",
+			"state_ne":     "removing",
 		},
 	})
 	if err != nil {

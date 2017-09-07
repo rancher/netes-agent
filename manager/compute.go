@@ -1,13 +1,13 @@
 package manager
 
 import (
+	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/sync"
 	"github.com/rancher/netes-agent/watch"
 	"k8s.io/client-go/kubernetes"
-	"fmt"
 )
 
 type deploymentSyncHandler func(*kubernetes.Clientset, *watch.Client, client.DeploymentSyncRequest) (client.DeploymentSyncResponse, error)

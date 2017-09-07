@@ -3,6 +3,7 @@ package sync
 import (
 	"time"
 
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/watch"
@@ -10,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	"fmt"
 )
 
 const (
@@ -85,7 +85,7 @@ func createPod(clientset *kubernetes.Clientset, pod v1.Pod) error {
 }
 
 func ensureNamespaceExists(clientset *kubernetes.Clientset, namespace string) error {
-	_, err := clientset.Namespaces().Get(namespace, metav1.GetOptions{});
+	_, err := clientset.Namespaces().Get(namespace, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		log.Infof("Creating namepace %s", namespace)
 		if _, err = clientset.Namespaces().Create(&v1.Namespace{

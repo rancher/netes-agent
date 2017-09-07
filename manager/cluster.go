@@ -3,6 +3,7 @@ package manager
 import (
 	"strings"
 
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
@@ -14,19 +15,27 @@ import (
 
 func (m *Manager) SyncClusters(clusters []client.Cluster) error {
 	for _, cluster := range clusters {
-		if err := m.addCluster(cluster); err != nil {
-			log.Error(err)
+		if _, ok := m.clientsets.Load(cluster.Id); !ok {
+			if err := m.addCluster(cluster); err != nil {
+				log.Error(err)
+			}
 		}
 	}
 	return nil
 }
 
-func (m *Manager) addCluster(cluster client.Cluster) error {
+func (m *Manager) addOrUpdateCluster(cluster client.Cluster) error {
 	if _, ok := m.clientsets.Load(cluster.Id); ok {
-		return nil
+		if err := m.removeCluster(cluster); err != nil {
+			return err
+		}
 	}
+	return m.addCluster(cluster)
+}
 
+func (m *Manager) addCluster(cluster client.Cluster) error {
 	if cluster.K8sClientConfig == nil {
+		fmt.Println("###")
 		return nil
 	}
 
@@ -83,7 +92,8 @@ func (m *Manager) handleClusterCreateOrUpdate(event *events.Event) (*client.Publ
 	if err := mapstructure.Decode(event.Data["cluster"], &cluster); err != nil {
 		return nil, err
 	}
-	return emptyReply(event), m.addCluster(cluster)
+	log.Infof("Adding or updating cluster %s", cluster.Name)
+	return emptyReply(event), m.addOrUpdateCluster(cluster)
 }
 
 func (m *Manager) handleClusterRemove(event *events.Event) (*client.Publish, error) {
@@ -91,5 +101,6 @@ func (m *Manager) handleClusterRemove(event *events.Event) (*client.Publish, err
 	if err := mapstructure.Decode(event.Data["cluster"], &cluster); err != nil {
 		return nil, err
 	}
+	log.Infof("Removing cluster %s", cluster.Name)
 	return emptyReply(event), m.removeCluster(cluster)
 }

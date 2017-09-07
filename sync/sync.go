@@ -12,7 +12,6 @@ func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploy
 	if err != nil {
 		return client.DeploymentSyncResponse{}, err
 	}
-
 	return responseFromPod(createdPod), nil
 }
 

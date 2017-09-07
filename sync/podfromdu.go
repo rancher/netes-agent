@@ -51,9 +51,9 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: getPodName(deploymentUnit),
-			Namespace: deploymentUnit.Namespace,
-			Labels: getLabels(deploymentUnit),
+			Name:        getPodName(deploymentUnit),
+			Namespace:   deploymentUnit.Namespace,
+			Labels:      getLabels(deploymentUnit),
 			Annotations: getAnnotations(deploymentUnit),
 		},
 		Spec: podSpec,
@@ -85,7 +85,7 @@ func transformContainerName(name string) string {
 
 func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 	return map[string]string{
-		labels.RevisionLabel: deploymentUnit.Revision,
+		labels.RevisionLabel:       deploymentUnit.Revision,
 		labels.DeploymentUuidLabel: deploymentUnit.DeploymentUnitUuid,
 	}
 }
@@ -126,7 +126,7 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 		HostPID:       Primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:     v1.DNSDefault,
 		NodeName:      deploymentUnit.NodeName,
-		NodeSelector:  getNodeSelector(Primary(deploymentUnit)),
+		Affinity:      getAffinity(Primary(deploymentUnit)),
 		HostAliases:   getHostAliases(Primary(deploymentUnit)),
 		Volumes:       getVolumes(deploymentUnit),
 	}
@@ -178,12 +178,76 @@ func getHostAliases(container client.Container) []v1.HostAlias {
 	return hostAliases
 }
 
-func getNodeSelector(container client.Container) map[string]string {
-	var hostAffinityLabelMap map[string]string
-	if label, ok := container.Labels[labels.HostAffinityLabel]; ok {
-		hostAffinityLabelMap = labels.Parse(label)
+func getAffinity(container client.Container) *v1.Affinity {
+	// No affinity for global services
+	if val, ok := container.Labels[labels.GlobalLabel]; ok && val == "true" {
+		return nil
 	}
-	return hostAffinityLabelMap
+
+	var matchExpressions []v1.NodeSelectorRequirement
+	hostAffinity, ok := container.Labels[labels.HostAffinityLabel]
+	if ok {
+		affinitySelectors := getMatchExpressions(labels.Parse(hostAffinity), v1.NodeSelectorOpIn)
+		matchExpressions = append(matchExpressions, affinitySelectors...)
+	}
+	hostAntiAffinity, ok := container.Labels[labels.HostAntiAffinityLabel]
+	if ok {
+		antiAffinitySelectors := getMatchExpressions(labels.Parse(hostAntiAffinity), v1.NodeSelectorOpNotIn)
+		matchExpressions = append(matchExpressions, antiAffinitySelectors...)
+	}
+
+	var softMatchExpressions []v1.NodeSelectorRequirement
+	softHostAffinity, ok := container.Labels[labels.HostSoftAffinityLabel]
+	if ok {
+		softAffinitySelectors := getMatchExpressions(labels.Parse(softHostAffinity), v1.NodeSelectorOpIn)
+		softMatchExpressions = append(softMatchExpressions, softAffinitySelectors...)
+	}
+	softHostAntiAffinity, ok := container.Labels[labels.HostSoftAntiAffinityLabel]
+	if ok {
+		softAntiAffinitySelectors := getMatchExpressions(labels.Parse(softHostAntiAffinity), v1.NodeSelectorOpNotIn)
+		softMatchExpressions = append(softMatchExpressions, softAntiAffinitySelectors...)
+	}
+
+	if len(matchExpressions) == 0 && len(softMatchExpressions) == 0 {
+		return nil
+	}
+
+	affinity := v1.Affinity{
+		NodeAffinity: &v1.NodeAffinity{},
+	}
+	if len(matchExpressions) > 0 {
+		affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &v1.NodeSelector{
+			NodeSelectorTerms: []v1.NodeSelectorTerm{
+				{
+					MatchExpressions: matchExpressions,
+				},
+			},
+		}
+	}
+	if len(softMatchExpressions) > 0 {
+		affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []v1.PreferredSchedulingTerm{
+			{
+				Preference: v1.NodeSelectorTerm{
+					MatchExpressions: softMatchExpressions,
+				},
+			},
+		}
+	}
+	return &affinity
+}
+
+func getMatchExpressions(labelMap map[string]string, operator v1.NodeSelectorOperator) []v1.NodeSelectorRequirement {
+	var matchExpressions []v1.NodeSelectorRequirement
+	for k, v := range labelMap {
+		matchExpressions = append(matchExpressions, v1.NodeSelectorRequirement{
+			Key:      k,
+			Operator: operator,
+			Values: []string{
+				v,
+			},
+		})
+	}
+	return matchExpressions
 }
 
 func getEnvironment(container client.Container) []v1.EnvVar {
@@ -225,20 +289,6 @@ func getVolumes(deploymentUnit client.DeploymentSyncRequest) []v1.Volume {
 	}
 
 	for _, container := range deploymentUnit.Containers {
-		for _, mount := range container.Mounts {
-			volumeName := getVolumeName(mount.VolumeName)
-			volumes = append(volumes, v1.Volume{
-				Name: volumeName,
-				VolumeSource: v1.VolumeSource{
-					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-						ClaimName: volumeName,
-					},
-				},
-			})
-		}
-	}
-
-	for _, container := range deploymentUnit.Containers {
 		for tmpfs := range container.Tmpfs {
 			volumes = append(volumes, v1.Volume{
 				Name: utils.Hash(tmpfs),
@@ -273,13 +323,6 @@ func getVolumeMounts(container client.Container) []v1.VolumeMount {
 		volumeMounts = append(volumeMounts, v1.VolumeMount{
 			Name:      utils.Hash(hostPath),
 			MountPath: containerPath,
-		})
-	}
-
-	for _, mount := range container.Mounts {
-		volumeMounts = append(volumeMounts, v1.VolumeMount{
-			Name:      getVolumeName(mount.VolumeName),
-			MountPath: mount.Path,
 		})
 	}
 

@@ -8,10 +8,10 @@ import (
 )
 
 type Client struct {
-	clientset *kubernetes.Clientset
-	pods      map[string]map[string]v1.Pod
-	podsMutex sync.RWMutex
-	podsWatchChan  chan struct{}
+	clientset     *kubernetes.Clientset
+	pods          map[string]map[string]v1.Pod
+	podsMutex     sync.RWMutex
+	podsWatchChan chan struct{}
 }
 
 func NewClient(clientset *kubernetes.Clientset) *Client {

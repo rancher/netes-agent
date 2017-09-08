@@ -7,6 +7,7 @@ import (
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -212,7 +213,7 @@ func TestGetAffinity(t *testing.T) {
 			labels.HostAffinityLabel:     "key1=val1,key2=val2",
 			labels.HostAntiAffinityLabel: "key3=val3,key4=val4",
 		},
-	}).NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions
+	}, "default").NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions
 	assert.Len(t, matchExpressions, 4)
 	for _, nodeSelectorRequirement := range []v1.NodeSelectorRequirement{
 		{
@@ -252,7 +253,7 @@ func TestGetAffinity(t *testing.T) {
 			labels.HostSoftAffinityLabel:     "key1=val1,key2=val2",
 			labels.HostSoftAntiAffinityLabel: "key3=val3,key4=val4",
 		},
-	}).NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0].Preference.MatchExpressions
+	}, "default").NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0].Preference.MatchExpressions
 	assert.Len(t, matchExpressions, 4)
 	for _, nodeSelectorRequirement := range []v1.NodeSelectorRequirement{
 		{
@@ -285,5 +286,93 @@ func TestGetAffinity(t *testing.T) {
 		},
 	} {
 		assert.Contains(t, matchExpressions, nodeSelectorRequirement)
+	}
+
+	podAffinityTerms := getAffinity(client.Container{
+		Labels: map[string]interface{}{
+			labels.ContainerAffinityLabel:     "key1=val1,key2=val2",
+			labels.ContainerAntiAffinityLabel: "key3=val3,key4=val4",
+		},
+	}, "default").PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution
+	assert.Len(t, podAffinityTerms, 1)
+	assert.Equal(t, podAffinityTerms[0].Namespaces, []string{"default"})
+	assert.Equal(t, podAffinityTerms[0].TopologyKey, hostnameTopologyKey)
+	labelMatchExpressions := podAffinityTerms[0].LabelSelector.MatchExpressions
+	assert.Len(t, labelMatchExpressions, 4)
+	for _, labelSelectorRequirement := range []metav1.LabelSelectorRequirement{
+		{
+			Key:      utils.Hash("key1"),
+			Operator: metav1.LabelSelectorOpIn,
+			Values: []string{
+				utils.Hash("val1"),
+			},
+		},
+		{
+			Key:      utils.Hash("key2"),
+			Operator: metav1.LabelSelectorOpIn,
+			Values: []string{
+				utils.Hash("val2"),
+			},
+		},
+		{
+			Key:      utils.Hash("key3"),
+			Operator: metav1.LabelSelectorOpNotIn,
+			Values: []string{
+				utils.Hash("val3"),
+			},
+		},
+		{
+			Key:      utils.Hash("key4"),
+			Operator: metav1.LabelSelectorOpNotIn,
+			Values: []string{
+				utils.Hash("val4"),
+			},
+		},
+	} {
+		assert.Contains(t, labelMatchExpressions, labelSelectorRequirement)
+	}
+
+	weightedPodAffinityTerms := getAffinity(client.Container{
+		Labels: map[string]interface{}{
+			labels.ContainerSoftAffinityLabel:     "key1=val1,key2=val2",
+			labels.ContainerSoftAntiAffinityLabel: "key3=val3,key4=val4",
+		},
+	}, "default").PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+	assert.Len(t, weightedPodAffinityTerms, 1)
+	assert.Equal(t, weightedPodAffinityTerms[0].PodAffinityTerm.Namespaces, []string{"default"})
+	assert.Equal(t, weightedPodAffinityTerms[0].PodAffinityTerm.TopologyKey, hostnameTopologyKey)
+	labelMatchExpressions = weightedPodAffinityTerms[0].PodAffinityTerm.LabelSelector.MatchExpressions
+	assert.Len(t, labelMatchExpressions, 4)
+	for _, labelSelectorRequirement := range []metav1.LabelSelectorRequirement{
+		{
+			Key:      utils.Hash("key1"),
+			Operator: metav1.LabelSelectorOpIn,
+			Values: []string{
+				utils.Hash("val1"),
+			},
+		},
+		{
+			Key:      utils.Hash("key2"),
+			Operator: metav1.LabelSelectorOpIn,
+			Values: []string{
+				utils.Hash("val2"),
+			},
+		},
+		{
+			Key:      utils.Hash("key3"),
+			Operator: metav1.LabelSelectorOpNotIn,
+			Values: []string{
+				utils.Hash("val3"),
+			},
+		},
+		{
+			Key:      utils.Hash("key4"),
+			Operator: metav1.LabelSelectorOpNotIn,
+			Values: []string{
+				utils.Hash("val4"),
+			},
+		},
+	} {
+		assert.Contains(t, labelMatchExpressions, labelSelectorRequirement)
 	}
 }

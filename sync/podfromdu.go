@@ -16,6 +16,7 @@ import (
 const (
 	rancherPauseContainerName = "rancher-pause"
 	hostNetworkingKind        = "host"
+	hostnameTopologyKey       = "kubernetes.io/hostname"
 )
 
 var (
@@ -84,10 +85,14 @@ func transformContainerName(name string) string {
 }
 
 func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
-	return map[string]string{
+	podLabels := map[string]string{
 		labels.RevisionLabel:       deploymentUnit.Revision,
 		labels.DeploymentUuidLabel: deploymentUnit.DeploymentUnitUuid,
 	}
+	for k, v := range Primary(deploymentUnit).Labels {
+		podLabels[utils.Hash(k)] = utils.Hash(fmt.Sprint(v))
+	}
+	return podLabels
 }
 
 func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]string {
@@ -126,7 +131,7 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 		HostPID:       Primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:     v1.DNSDefault,
 		NodeName:      deploymentUnit.NodeName,
-		Affinity:      getAffinity(Primary(deploymentUnit)),
+		Affinity:      getAffinity(Primary(deploymentUnit), deploymentUnit.Namespace),
 		HostAliases:   getHostAliases(Primary(deploymentUnit)),
 		Volumes:       getVolumes(deploymentUnit),
 	}
@@ -178,42 +183,77 @@ func getHostAliases(container client.Container) []v1.HostAlias {
 	return hostAliases
 }
 
-func getAffinity(container client.Container) *v1.Affinity {
+func getAffinity(container client.Container, namespace string) *v1.Affinity {
 	// No affinity for global services
 	if val, ok := container.Labels[labels.GlobalLabel]; ok && val == "true" {
 		return nil
 	}
 
+	anyAffinities := false
+
 	var matchExpressions []v1.NodeSelectorRequirement
 	hostAffinity, ok := container.Labels[labels.HostAffinityLabel]
 	if ok {
-		affinitySelectors := getMatchExpressions(labels.Parse(hostAffinity), v1.NodeSelectorOpIn)
-		matchExpressions = append(matchExpressions, affinitySelectors...)
+		selectors := getNodeSelectorExpressions(labels.Parse(hostAffinity), v1.NodeSelectorOpIn)
+		matchExpressions = append(matchExpressions, selectors...)
+		anyAffinities = true
 	}
 	hostAntiAffinity, ok := container.Labels[labels.HostAntiAffinityLabel]
 	if ok {
-		antiAffinitySelectors := getMatchExpressions(labels.Parse(hostAntiAffinity), v1.NodeSelectorOpNotIn)
-		matchExpressions = append(matchExpressions, antiAffinitySelectors...)
+		selectors := getNodeSelectorExpressions(labels.Parse(hostAntiAffinity), v1.NodeSelectorOpNotIn)
+		matchExpressions = append(matchExpressions, selectors...)
+		anyAffinities = true
 	}
 
 	var softMatchExpressions []v1.NodeSelectorRequirement
 	softHostAffinity, ok := container.Labels[labels.HostSoftAffinityLabel]
 	if ok {
-		softAffinitySelectors := getMatchExpressions(labels.Parse(softHostAffinity), v1.NodeSelectorOpIn)
-		softMatchExpressions = append(softMatchExpressions, softAffinitySelectors...)
+		selectors := getNodeSelectorExpressions(labels.Parse(softHostAffinity), v1.NodeSelectorOpIn)
+		softMatchExpressions = append(softMatchExpressions, selectors...)
+		anyAffinities = true
 	}
 	softHostAntiAffinity, ok := container.Labels[labels.HostSoftAntiAffinityLabel]
 	if ok {
-		softAntiAffinitySelectors := getMatchExpressions(labels.Parse(softHostAntiAffinity), v1.NodeSelectorOpNotIn)
-		softMatchExpressions = append(softMatchExpressions, softAntiAffinitySelectors...)
+		selectors := getNodeSelectorExpressions(labels.Parse(softHostAntiAffinity), v1.NodeSelectorOpNotIn)
+		softMatchExpressions = append(softMatchExpressions, selectors...)
+		anyAffinities = true
 	}
 
-	if len(matchExpressions) == 0 && len(softMatchExpressions) == 0 {
+	var podAffinityMatchExpressions []metav1.LabelSelectorRequirement
+	containerAffinity, ok := container.Labels[labels.ContainerAffinityLabel]
+	if ok {
+		selectors := getLabelSelectorExpressions(labels.Parse(containerAffinity), metav1.LabelSelectorOpIn)
+		podAffinityMatchExpressions = append(podAffinityMatchExpressions, selectors...)
+		anyAffinities = true
+	}
+	containerAntiAffinity, ok := container.Labels[labels.ContainerAntiAffinityLabel]
+	if ok {
+		selectors := getLabelSelectorExpressions(labels.Parse(containerAntiAffinity), metav1.LabelSelectorOpNotIn)
+		podAffinityMatchExpressions = append(podAffinityMatchExpressions, selectors...)
+		anyAffinities = true
+	}
+
+	var softPodAffinityMatchExpressions []metav1.LabelSelectorRequirement
+	softContainerAffinity, ok := container.Labels[labels.ContainerSoftAffinityLabel]
+	if ok {
+		selectors := getLabelSelectorExpressions(labels.Parse(softContainerAffinity), metav1.LabelSelectorOpIn)
+		softPodAffinityMatchExpressions = append(softPodAffinityMatchExpressions, selectors...)
+		anyAffinities = true
+	}
+	softContainerAntiAffinity, ok := container.Labels[labels.ContainerSoftAntiAffinityLabel]
+	if ok {
+		selectors := getLabelSelectorExpressions(labels.Parse(softContainerAntiAffinity), metav1.LabelSelectorOpNotIn)
+		softPodAffinityMatchExpressions = append(softPodAffinityMatchExpressions, selectors...)
+		anyAffinities = true
+	}
+
+	if !anyAffinities {
 		return nil
 	}
 
 	affinity := v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{},
+		PodAffinity:  &v1.PodAffinity{},
 	}
 	if len(matchExpressions) > 0 {
 		affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &v1.NodeSelector{
@@ -233,13 +273,39 @@ func getAffinity(container client.Container) *v1.Affinity {
 			},
 		}
 	}
+	if len(podAffinityMatchExpressions) > 0 {
+		affinity.PodAffinity.RequiredDuringSchedulingIgnoredDuringExecution = []v1.PodAffinityTerm{
+			{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: podAffinityMatchExpressions,
+				},
+				// Selector matches against labels from the namespace of the deployment unit only
+				Namespaces:  []string{namespace},
+				TopologyKey: hostnameTopologyKey,
+			},
+		}
+	}
+	if len(softPodAffinityMatchExpressions) > 0 {
+		affinity.PodAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []v1.WeightedPodAffinityTerm{
+			{
+				PodAffinityTerm: v1.PodAffinityTerm{
+					LabelSelector: &metav1.LabelSelector{
+						MatchExpressions: softPodAffinityMatchExpressions,
+					},
+					// Selector matches against labels from the namespace of the deployment unit only
+					Namespaces:  []string{namespace},
+					TopologyKey: hostnameTopologyKey,
+				},
+			},
+		}
+	}
 	return &affinity
 }
 
-func getMatchExpressions(labelMap map[string]string, operator v1.NodeSelectorOperator) []v1.NodeSelectorRequirement {
-	var matchExpressions []v1.NodeSelectorRequirement
+func getNodeSelectorExpressions(labelMap map[string]string, operator v1.NodeSelectorOperator) []v1.NodeSelectorRequirement {
+	var expressions []v1.NodeSelectorRequirement
 	for k, v := range labelMap {
-		matchExpressions = append(matchExpressions, v1.NodeSelectorRequirement{
+		expressions = append(expressions, v1.NodeSelectorRequirement{
 			Key:      k,
 			Operator: operator,
 			Values: []string{
@@ -247,7 +313,21 @@ func getMatchExpressions(labelMap map[string]string, operator v1.NodeSelectorOpe
 			},
 		})
 	}
-	return matchExpressions
+	return expressions
+}
+
+func getLabelSelectorExpressions(labelMap map[string]string, operator metav1.LabelSelectorOperator) []metav1.LabelSelectorRequirement {
+	var expressions []metav1.LabelSelectorRequirement
+	for k, v := range labelMap {
+		expressions = append(expressions, metav1.LabelSelectorRequirement{
+			Key:      utils.Hash(k),
+			Operator: operator,
+			Values: []string{
+				utils.Hash(v),
+			},
+		})
+	}
+	return expressions
 }
 
 func getEnvironment(container client.Container) []v1.EnvVar {

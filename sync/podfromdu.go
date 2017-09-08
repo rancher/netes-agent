@@ -124,16 +124,28 @@ func getAnnotationName(containerName, label string) string {
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 	return v1.PodSpec{
-		RestartPolicy: v1.RestartPolicyNever,
-		HostNetwork:   getHostNetwork(deploymentUnit),
-		HostIPC:       Primary(deploymentUnit).IpcMode == "host",
-		HostPID:       Primary(deploymentUnit).PidMode == "host",
-		DNSPolicy:     v1.DNSDefault,
-		NodeName:      deploymentUnit.NodeName,
-		Affinity:      getAffinity(Primary(deploymentUnit), deploymentUnit.Namespace),
-		HostAliases:   getHostAliases(Primary(deploymentUnit)),
-		Volumes:       getVolumes(deploymentUnit),
+		RestartPolicy:    v1.RestartPolicyNever,
+		HostNetwork:      getHostNetwork(deploymentUnit),
+		HostIPC:          Primary(deploymentUnit).IpcMode == "host",
+		HostPID:          Primary(deploymentUnit).PidMode == "host",
+		DNSPolicy:        v1.DNSDefault,
+		NodeName:         deploymentUnit.NodeName,
+		Affinity:         getAffinity(Primary(deploymentUnit), deploymentUnit.Namespace),
+		HostAliases:      getHostAliases(Primary(deploymentUnit)),
+		Volumes:          getVolumes(deploymentUnit),
+		ImagePullSecrets: getImagePullSecretReferences(deploymentUnit),
 	}
+}
+
+func getImagePullSecretReferences(deploymentUnit client.DeploymentSyncRequest) []v1.LocalObjectReference {
+	var references []v1.LocalObjectReference
+	for _, registryCredential := range deploymentUnit.RegistryCredentials {
+		references = append(references, v1.LocalObjectReference{
+			// TODO: remove hard-coded registry URL
+			Name: getSecretName(dockerRegistry, registryCredential.PublicValue, registryCredential.SecretValue),
+		})
+	}
+	return references
 }
 
 func getHostNetwork(deploymentUnit client.DeploymentSyncRequest) bool {

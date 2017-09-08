@@ -6,9 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 
-	"fmt"
 	"github.com/rancher/go-rancher/v3"
-	"github.com/rancher/netes-agent/labels"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +15,7 @@ func TestResponseFromPod(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pod1",
 			Annotations: map[string]string{
-				fmt.Sprintf("%s/%s", "c1", labels.ContainerUuidLabel): "00000000-0000-0000-0000-000000000000",
+				"c1/io.rancher.container.uuid": "00000000-0000-0000-0000-000000000000",
 			},
 		},
 		Status: v1.PodStatus{

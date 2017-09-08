@@ -2,6 +2,7 @@ package sync
 
 import (
 	"github.com/rancher/go-rancher/v3"
+	"github.com/rancher/netes-agent/labels"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -13,7 +14,7 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 			continue
 		}
 
-		containerUuid, ok := pod.Annotations[getContainerUuidAnnotationName(containerStatus.Name)]
+		containerUuid, ok := pod.Annotations[getAnnotationName(containerStatus.Name, labels.ContainerUuidLabel)]
 		if !ok {
 			continue
 		}

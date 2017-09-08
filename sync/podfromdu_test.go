@@ -26,7 +26,6 @@ func TestGetAnnotations(t *testing.T) {
 		Containers: []client.Container{
 			{
 				Name: "c1",
-				Uuid: "00000000-0000-0000-0000-000000000000",
 				Labels: map[string]interface{}{
 					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
 					"a": "b",
@@ -34,17 +33,15 @@ func TestGetAnnotations(t *testing.T) {
 			},
 			{
 				Name: "c2",
-				Uuid: "00000000-0000-0000-0000-000000000000",
 				Labels: map[string]interface{}{
 					"c": "d",
 				},
 			},
 		},
 	}), map[string]string{
-		"a": "b",
-		"c1/io.rancher.container.uuid": "00000000-0000-0000-0000-000000000000",
+		"a":    "b",
+		"c1/a": "b",
 		"c2/c": "d",
-		"c2/io.rancher.container.uuid": "00000000-0000-0000-0000-000000000000",
 	})
 }
 

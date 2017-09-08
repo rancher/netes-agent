@@ -102,25 +102,24 @@ func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]stri
 	for k, v := range primary.Labels {
 		if k != labels.ServiceLaunchConfig {
 			annotations[k] = fmt.Sprint(v)
+			annotations[getAnnotationName(primary.Name, k)] = fmt.Sprint(v)
 		}
 	}
-	annotations[getContainerUuidAnnotationName(primary.Name)] = primary.Uuid
 
 	for _, container := range deploymentUnit.Containers {
 		if container.Name == primary.Name {
 			continue
 		}
 		for k, v := range container.Labels {
-			annotations[fmt.Sprintf("%s/%s", transformContainerName(container.Name), k)] = fmt.Sprint(v)
+			annotations[getAnnotationName(container.Name, k)] = fmt.Sprint(v)
 		}
-		annotations[getContainerUuidAnnotationName(container.Name)] = container.Uuid
 	}
 
 	return annotations
 }
 
-func getContainerUuidAnnotationName(containerName string) string {
-	return fmt.Sprintf("%s/%s", transformContainerName(containerName), labels.ContainerUuidLabel)
+func getAnnotationName(containerName, label string) string {
+	return fmt.Sprintf("%s/%s", transformContainerName(containerName), label)
 }
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {

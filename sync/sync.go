@@ -7,6 +7,11 @@ import (
 )
 
 func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest) (client.DeploymentSyncResponse, error) {
+	credentialSecrets := credentialsFromDeploymentUnit(deploymentUnit)
+	if err := reconcileSecrets(clientset, deploymentUnit.Namespace, credentialSecrets); err != nil {
+		return client.DeploymentSyncResponse{}, err
+	}
+
 	pod := podFromDeploymentUnit(deploymentUnit)
 	createdPod, err := reconcilePod(clientset, watchClient, pod)
 	if err != nil {

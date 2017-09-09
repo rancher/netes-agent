@@ -44,10 +44,15 @@ func TestUpgrade(t *testing.T) {
 	_, pod := simulateEvent(t, securityContextEvent, nextDeploymentUuid())
 	container := getNonPauseContainer(t, pod)
 
-	assert.Equal(t, container.Image, "library/nginx")
+	assert.Equal(t, container.Image, "nginx")
 
 	_, pod = simulateEvent(t, upgradeEvent, pod.Name)
 	container = getNonPauseContainer(t, pod)
 
-	assert.Equal(t, container.Image, "library/nginx:1.13")
+	assert.Equal(t, container.Image, "nginx:1.13")
+}
+
+func TestAlternateNamespace(t *testing.T) {
+	_, pod := simulateEvent(t, alternateNamespaceEvent, nextDeploymentUuid())
+	assert.Equal(t, pod.Namespace, "testnamespace")
 }

@@ -23,7 +23,10 @@ var (
 	})
 	upgradeEvent = modifyEvent(getEvent("basic"), func(request *client.DeploymentSyncRequest, c *client.Container) {
 		request.Revision = "newrevision"
-		c.Image = "library/nginx:1.13"
-		c.ImageUuid = "docker:library/nginx:1.13"
+		c.Image = "nginx:1.13"
+		c.ImageUuid = "docker:nginx:1.13"
+	})
+	alternateNamespaceEvent = modifyEvent(getEvent("basic"), func(request *client.DeploymentSyncRequest, c *client.Container) {
+		request.Namespace = "testnamespace"
 	})
 )

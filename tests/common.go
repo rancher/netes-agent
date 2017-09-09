@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	kubernetesAddress = "http://0.0.0.0:8080"
+	kubernetesAddress = "0.0.0.0:8080"
 )
 
 var (
@@ -40,6 +40,9 @@ func init() {
 	testManager = manager.New(nil)
 	testManager.SyncClusters([]client.Cluster{
 		{
+			Resource: client.Resource{
+				Id: "1c1",
+			},
 			K8sClientConfig: &client.K8sClientConfig{
 				Address: kubernetesAddress,
 			},
@@ -49,18 +52,25 @@ func init() {
 
 func nextDeploymentUuid() string {
 	deploymentUuid += 1
-	return fmt.Sprint(deploymentUuid)
+	return fmt.Sprintf("%08d", deploymentUuid)
 }
 
 func simulateEvent(t *testing.T, event events.Event, deploymentUuid string) (*client.Publish, v1.Pod) {
+	var namespace string
 	modifyEvent(event, func(request *client.DeploymentSyncRequest, _ *client.Container) {
+		namespace = request.Namespace
 		request.DeploymentUnitUuid = deploymentUuid
 	})
 
 	response, err := testManager.HandleComputeInstanceActivate(&event)
 	assert.NoError(t, err)
 
-	pod, err := clientset.Pods(v1.NamespaceDefault).Get(deploymentUuid, metav1.GetOptions{})
+	var deploymentSyncResponse client.DeploymentSyncResponse
+	assert.NoError(t, mapstructure.Decode(response.Data["deploymentSyncResponse"], &deploymentSyncResponse))
+
+	assert.NotEmpty(t, deploymentSyncResponse.ExternalId)
+
+	pod, err := clientset.Pods(namespace).Get(deploymentSyncResponse.ExternalId, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	return response, *pod

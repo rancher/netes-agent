@@ -1,13 +1,22 @@
 #!/bin/bash
 set -e
 
+echo Starting Docker in Docker
+
+export SOCK=/var/run/dind.sock
+export DOCKER_HOST=unix://${SOCK}
+
+docker daemon -D -H $DOCKER_HOST &> /dev/null &
+
+echo Docker in Docker started
+
 echo Starting Kubernetes
 
 etcd &> /dev/null &
 hyperkube kube-apiserver --etcd-servers=http://0.0.0.0:2379 --service-cluster-ip-range=10.43.0.0/16 &> /dev/null &
 hyperkube kube-controller-manager --master=http://0.0.0.0:8080 &> /dev/null &
 hyperkube kube-scheduler --master=http://0.0.0.0:8080 &> /dev/null &
-hyperkube kubelet --api-servers=http://0.0.0.0:8080 &> /dev/null &
+hyperkube kubelet --api-servers=http://0.0.0.0:8080 --docker-endpoint=$DOCKER_HOST &> /dev/null &
 
 echo All Kubernetes components started
 

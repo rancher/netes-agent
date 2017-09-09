@@ -1,186 +1,192 @@
+
+
 {
-	"id": "0aa5f8a5-4726-4dc0-8f5f-1b02ae890309",
-	"name": "compute.instance.activate",
-	"replyTo": "reply.1331933575567990253",
-	"resourceId": "1i20",
-	"resourceType": "instance",
-	"data": {
-		"deploymentSyncRequest": {
-			"id": null,
-			"type": "deploymentSyncRequest",
-			"links": {},
-			"actions": {},
-			"baseType": "deploymentSyncRequest",
-			"containers": [{
-				"type": "container",
-				"accountId": "1a5",
-				"agentId": null,
-				"count": 1,
-				"createIndex": null,
-				"created": "2017-07-26T20:59:32Z",
-				"credentialIds": null,
-				"dependsOn": null,
-				"deploymentUnitId": "1du12",
-				"description": null,
-				"desired": true,
-				"domain": null,
-				"expose": null,
-				"externalId": null,
-				"firstRunning": null,
-				"healthState": null,
-				"healthcheckStates": null,
-				"hostId": "1h4",
-				"hostname": null,
-				"id": "1i20",
-				"image": "library/nginx",
-				"imageUuid": "docker:library/nginx",
-				"instanceTriggeredStop": "stop",
-				"kind": "container",
-				"lastStart": null,
-				"lbRulesOnRemove": null,
-				"memoryMb": null,
-				"memoryReservation": null,
-				"milliCpuReservation": null,
-				"mounts": null,
-				"name": "strongmonkey",
-				"nativeContainer": false,
-				"networkcontainerID": null,
-				"networkId": null,
-				"networkIds": ["1n4"],
-				"portBindings": null,
-				"ports": [],
-				"primaryIpAddress": null,
-				"registryCredentialId": null,
-				"removeTime": null,
-				"removed": null,
-				"requestedHostId": null,
-				"requestedIpAddress": null,
-				"revision": 6,
-				"revisionId": "1r21",
-				"serviceId": null,
-				"serviceIds": null,
-				"serviceIndex": null,
-				"shouldRestart": null,
-				"stackId": "1st1",
-				"startCount": 0,
-				"startOnCreate": true,
-				"state": "starting",
-				"system": false,
-				"token": null,
-				"transitioning": null,
-				"transitioningMessage": null,
-				"upgradeTime": null,
-				"userdata": null,
-				"uuid": "85db87bf-cb14-4643-9e7d-a13e3e77a991",
-				"version": "0",
-				"volumeDriver": null,
-				"retainIp": null,
-				"environment": {},
-				"command": null,
-				"workingDir": null,
-				"user": null,
-				"publishAllPorts": false,
-				"primaryNetworkId": "1n4",
-				"privileged": false,
-				"capAdd": [],
-				"capDrop": [],
-				"dns": [],
-				"dnsSearch": [],
-				"instanceLinks": [],
-				"domainName": null,
-				"memorySwap": null,
-				"memory": null,
-				"cpuSet": null,
-				"cpuShares": null,
-				"stdinOpen": true,
-				"tty": true,
-				"entryPoint": null,
-				"lxcConf": null,
-				"restartPolicy": {
-					"type": "restartPolicy",
-					"name": "always"
-				},
-				"devices": [],
-				"blkioDeviceOptions": null,
-				"labels": {
-					"io.rancher.container.pull_image": "always",
-					"io.rancher.container.mac_address": "02:0c:9e:04:d1:39"
-				},
-				"healthCheck": null,
-				"securityOpt": null,
-				"logConfig": {
-					"type": "logConfig",
-					"config": {},
-					"driver": ""
-				},
-				"pidMode": null,
-				"extraHosts": null,
-				"readOnly": false,
-				"build": null,
-				"dataVolumeMounts": {},
-				"blkioWeight": null,
-				"cgroupParent": null,
-				"usernsMode": null,
-				"pidsLimit": null,
-				"diskQuota": null,
-				"cpuCount": null,
-				"cpuPercent": null,
-				"ioMaximumIOps": null,
-				"ioMaximumBandwidth": null,
-				"cpuPeriod": null,
-				"cpuQuota": null,
-				"cpuSetMems": null,
-				"dnsOpt": null,
-				"groupAdd": null,
-				"isolation": null,
-				"kernelMemory": null,
-				"memorySwappiness": null,
-				"oomKillDisable": null,
-				"shmSize": null,
-				"tmpfs": null,
-				"uts": null,
-				"ipcMode": null,
-				"stopSignal": null,
-				"sysctls": null,
-				"storageOpt": null,
-				"oomScoreAdj": null,
-				"ulimits": null,
-				"ip": null,
-				"ip6": null,
-				"netAlias": null,
-				"healthCmd": null,
-				"healthInterval": null,
-				"healthTimeout": null,
-				"healthRetries": null,
-				"secrets": [],
-				"userPorts": null,
-				"sidekickTo": null,
-				"metadata": null,
-				"stopSource": null,
-				"exitCode": null,
-				"startRetryCount": null,
-				"deploymentUnitUuid": "30cae0a2-2461-4ed7-b4e8-f0a84840035b",
-				"launchConfigName": "io.rancher.service.primary.launch.config",
-				"prePullOnUpgrade": "all",
-				"networkMode": "managed",
-				"dockerPorts": null,
-				"dockerHostIp": null,
-				"dockerIp": null,
-				"dataVolumes": [],
-				"dataVolumesFrom": [],
-				"dockerInspect": null,
-				"publicEndpoints": []
-			}],
-			"deploymentUnitUuid": "0aa5f8a5-4726-4dc0-8f5f-1b02ae890309",
-			"registryCredentials": [],
-			"revision": "6f3ef77ac0e3619e98159e9b6febf557",
-			"volumes": [],
-			"network": {
-				"kind": "dockerBridge",
-				"id": "1n4"
-			}
-		}
-	},
-	"time": 1501102772432,
-	"timeoutMillis": 45000
-} 
+  "name": "instance.start;handler=k8s-cluster-service",
+  "id": "b614db98-24c7-470e-b5e2-9eca45c51279",
+  "replyTo": "reply.7035849509124713997",
+  "resourceId": "1i3671",
+  "resourceType": "instance",
+  "data": {
+    "deploymentSyncRequest": {
+      "actions": {
+
+      },
+      "baseType": "deploymentSyncRequest",
+      "clusterId": "1c1",
+      "containers": [
+        {
+          "accountId": "1a31",
+          "capAdd": [
+
+          ],
+          "capDrop": [
+
+          ],
+          "clusterId": "1c1",
+          "count": 1,
+          "createOnly": false,
+          "created": "2017-09-08T21:51:37Z",
+          "dataVolumeMounts": {
+
+          },
+          "dataVolumes": [
+
+          ],
+          "deploymentUnitId": "1du61",
+          "deploymentUnitUuid": "144d359e-2e82-4828-a33f-07db6e758433",
+          "desired": true,
+          "devices": [
+
+          ],
+          "dns": [
+            "169.254.169.250"
+          ],
+          "dnsSearch": [
+            "rancher.internal",
+            "cc1.rancher.internal"
+          ],
+          "environment": {
+
+          },
+          "id": "1i3671",
+          "image": "nginx",
+          "imageUuid": "docker:nginx",
+          "instanceTriggeredStop": "stop",
+          "kind": "container",
+          "labels": {
+            "io.rancher.cni.network": "ipsec",
+            "io.rancher.cni.wait": "true",
+            "io.rancher.container.ip": "10.42.119.74",
+            "io.rancher.container.mac_address": "02:3e:ba:37:4f:21",
+            "io.rancher.container.orchestration": "kubernetes",
+            "io.rancher.container.pull_image": "always",
+            "io.rancher.container.uuid": "e47c5766-da88-4578-8966-98a93b1aa2c6"
+          },
+          "logConfig": {
+            "config": {
+
+            },
+            "driver": "",
+            "type": "logConfig"
+          },
+          "name": "test2",
+          "nativeContainer": false,
+          "networkIds": [
+            "1n14"
+          ],
+          "networkMode": "managed",
+          "ports": [
+
+          ],
+          "prePullOnUpgrade": "all",
+          "primaryIpAddress": "10.42.119.74",
+          "primaryNetworkId": "1n14",
+          "privileged": false,
+          "publishAllPorts": false,
+          "readOnly": false,
+          "registryCredentialId": "1c118",
+          "restartPolicy": {
+            "name": "always",
+            "type": "restartPolicy"
+          },
+          "revisionId": "1r35",
+          "secrets": [
+
+          ],
+          "stackId": "1st25",
+          "startCount": 0,
+          "state": "starting",
+          "stdinOpen": true,
+          "stopSignal": "SIGTERM",
+          "stopTimeout": 10,
+          "tty": true,
+          "type": "container",
+          "uuid": "e47c5766-da88-4578-8966-98a93b1aa2c6",
+          "version": "0"
+        }
+      ],
+      "deploymentUnitUuid": "144d359e-2e82-4828-a33f-07db6e758433",
+      "id": null,
+      "links": {
+
+      },
+      "namespace": "default",
+      "networks": [
+        {
+          "clusterId": "1c1",
+          "created": "2017-09-07T17:25:04Z",
+          "defaultPolicyAction": "allow",
+          "dns": [
+            "169.254.169.250"
+          ],
+          "dnsSearch": [
+            "rancher.internal"
+          ],
+          "hostPorts": true,
+          "id": "1n14",
+          "kind": "cni",
+          "metadata": {
+            "cniConfig": {
+              "10-rancher.conf": {
+                "bridge": "docker0",
+                "bridgeSubnet": "10.42.0.0\/16",
+                "hairpinMode": false,
+                "hostNat": true,
+                "ipam": {
+                  "isDebugLevel": "false",
+                  "logToFile": "\/var\/log\/rancher-cni.log",
+                  "routes": [
+                    {
+                      "dst": "169.254.169.250\/32"
+                    }
+                  ],
+                  "subnetPrefixSize": "\/16",
+                  "type": "rancher-cni-ipam"
+                },
+                "isDebugLevel": "false",
+                "isDefaultGateway": true,
+                "linkMTUOverhead": 98,
+                "logToFile": "\/var\/log\/rancher-cni.log",
+                "mtu": 1500,
+                "name": "rancher-cni-network",
+                "promiscMode": true,
+                "type": "rancher-bridge"
+              }
+            }
+          },
+          "name": "ipsec",
+          "networkDriverId": "1nd2",
+          "state": "active",
+          "subnets": [
+            {
+              "cidrSize": 24,
+              "networkAddress": "10.42.0.0\/16",
+              "type": "subnet"
+            }
+          ],
+          "type": "network",
+          "uuid": "2dc3917d-4300-4350-8176-e8f760731718"
+        }
+      ],
+      "registryCredentials": [
+        {
+          "accountId": "1a31",
+          "created": "2017-09-07T18:22:53Z",
+          "id": "1c118",
+          "kind": "registryCredential",
+          "publicValue": "joshwget",
+          "secretValue": "mbfaibat7",
+          "state": "active",
+          "type": "credential",
+          "uuid": "de468472-2b40-44e1-952f-b4ac8bda31a7"
+        }
+      ],
+      "revision": "9de6d14fff9806d4bcd1ef555be766cd",
+      "type": "deploymentSyncRequest",
+      "volumes": [
+
+      ]
+    }
+  },
+  "time": 1504907498089
+}

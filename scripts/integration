@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+cd $(dirname $0)
+
+./build
+./run-kubernetes
+
+cd -
+
+echo Running integration tests
+
+[ "${ARCH}" == "amd64" ] && RACE=-race
+go test -v ${RACE} -cover -tags=test github.com/rancher/netes-agent/tests

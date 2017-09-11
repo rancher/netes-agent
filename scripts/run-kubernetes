@@ -16,7 +16,7 @@ etcd &> /dev/null &
 hyperkube kube-apiserver --etcd-servers=http://0.0.0.0:2379 --service-cluster-ip-range=10.43.0.0/16 &> /dev/null &
 hyperkube kube-controller-manager --master=http://0.0.0.0:8080 &> /dev/null &
 hyperkube kube-scheduler --master=http://0.0.0.0:8080 &> /dev/null &
-hyperkube kubelet --api-servers=http://0.0.0.0:8080 --docker-endpoint=$DOCKER_HOST &> /dev/null &
+hyperkube kubelet --api-servers=http://0.0.0.0:8080 --docker-endpoint=$DOCKER_HOST --hostname-override=testhost &> /dev/null &
 
 echo All Kubernetes components started
 

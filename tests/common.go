@@ -56,10 +56,15 @@ func nextDeploymentUuid() string {
 }
 
 func simulateEvent(t *testing.T, event events.Event, deploymentUuid string) (*client.Publish, v1.Pod) {
+	// Save namespace and container UUIDS for later testing
 	var namespace string
+	var containerUuids []string
 	modifyEvent(event, func(request *client.DeploymentSyncRequest, _ *client.Container) {
 		namespace = request.Namespace
 		request.DeploymentUnitUuid = deploymentUuid
+		for _, container := range request.Containers {
+			containerUuids = append(containerUuids, container.Uuid)
+		}
 	})
 
 	response, err := testManager.HandleComputeInstanceActivate(&event)
@@ -68,10 +73,25 @@ func simulateEvent(t *testing.T, event events.Event, deploymentUuid string) (*cl
 	var deploymentSyncResponse client.DeploymentSyncResponse
 	assert.NoError(t, mapstructure.Decode(response.Data["deploymentSyncResponse"], &deploymentSyncResponse))
 
+	// ExternalId should not be empty
 	assert.NotEmpty(t, deploymentSyncResponse.ExternalId)
+	// NodeName should be reported correctly
+	assert.Equal(t, "testhost", deploymentSyncResponse.NodeName)
+	// Ensure instance statuses contain all container UUIDs from the request
+	assert.Len(t, deploymentSyncResponse.InstanceStatus, len(containerUuids))
+	for _, instanceStatus := range deploymentSyncResponse.InstanceStatus {
+		assert.NotEmpty(t, instanceStatus.InstanceUuid)
+		assert.Contains(t, containerUuids, instanceStatus.InstanceUuid)
+	}
 
+	// Lookup the created pod based on ExternalId
 	pod, err := clientset.Pods(namespace).Get(deploymentSyncResponse.ExternalId, metav1.GetOptions{})
 	assert.NoError(t, err)
+
+	// Ensure the IP was reported correctly
+	for _, instanceStatus := range deploymentSyncResponse.InstanceStatus {
+		assert.Equal(t, instanceStatus.PrimaryIpAddress, pod.Status.PodIP)
+	}
 
 	return response, *pod
 }

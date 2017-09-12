@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
+	"strconv"
 )
 
 const (
@@ -73,6 +74,7 @@ func getContainer(container client.Container) v1.Container {
 		Env:             getEnvironment(container),
 		SecurityContext: getSecurityContext(container),
 		VolumeMounts:    getVolumeMounts(container),
+		Ports:           getPorts(container),
 	}
 }
 
@@ -350,6 +352,44 @@ func getEnvironment(container client.Container) []v1.EnvVar {
 		})
 	}
 	return environment
+}
+
+func getPorts(container client.Container) []v1.ContainerPort {
+	var ports []v1.ContainerPort
+	for _, port := range container.Ports {
+		protocol := v1.ProtocolTCP
+		if strings.HasSuffix(port, "/tcp") {
+			port = strings.Replace(port, "/tcp", "", -1)
+		} else if strings.HasSuffix(port, "/TCP") {
+			port = strings.Replace(port, "/TCP", "", -1)
+		} else if strings.HasSuffix(port, "/udp") {
+			protocol = v1.ProtocolUDP
+			port = strings.Replace(port, "/udp", "", -1)
+		} else if strings.HasSuffix(port, "/UDP") {
+			protocol = v1.ProtocolUDP
+			port = strings.Replace(port, "/UDP", "", -1)
+		} else {
+			continue
+		}
+		parts := strings.Split(port, ":")
+		if len(parts) < 2 {
+			continue
+		}
+		hostPort, err := strconv.ParseInt(parts[0], 10, 32)
+		if err != nil {
+			continue
+		}
+		containerPort, err := strconv.ParseInt(parts[1], 10, 32)
+		if err != nil {
+			continue
+		}
+		ports = append(ports, v1.ContainerPort{
+			ContainerPort: int32(containerPort),
+			HostPort:      int32(hostPort),
+			Protocol:      protocol,
+		})
+	}
+	return ports
 }
 
 func getVolumes(deploymentUnit client.DeploymentSyncRequest) []v1.Volume {

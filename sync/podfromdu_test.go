@@ -3,6 +3,7 @@ package sync
 import (
 	"testing"
 
+	"fmt"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
@@ -39,8 +40,10 @@ func TestGetAnnotations(t *testing.T) {
 			},
 		},
 	}), map[string]string{
-		"a":    "b",
+		"a": "b",
+		labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
 		"c1/a": "b",
+		fmt.Sprintf("%s/%s", "c1", labels.ServiceLaunchConfig): labels.ServicePrimaryLaunchConfig,
 		"c2/c": "d",
 	})
 }

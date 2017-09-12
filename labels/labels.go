@@ -10,6 +10,7 @@ const (
 	DeploymentUuidLabel = "io.rancher.deployment.uuid"
 	ContainerUuidLabel  = "io.rancher.container.uuid"
 
+	SchedulingLabelPrefix          = "io.rancher.scheduler"
 	GlobalLabel                    = "io.rancher.scheduler.global"
 	HostAffinityLabel              = "io.rancher.scheduler.affinity:host_label"
 	HostAntiAffinityLabel          = "io.rancher.scheduler.affinity:host_label_ne"

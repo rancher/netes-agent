@@ -8,6 +8,7 @@ import (
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
@@ -114,6 +115,26 @@ func TestSecurityContext(t *testing.T) {
 		v1.Capability("capdrop1"),
 		v1.Capability("capdrop2"),
 	})
+}
+
+func TestGetResources(t *testing.T) {
+	assert.Equal(t, v1.ResourceRequirements{
+		Limits: v1.ResourceList{
+			v1.ResourceMemory: resource.MustParse("100000"),
+		},
+		Requests: v1.ResourceList{
+			v1.ResourceMemory: resource.MustParse("100000"),
+			v1.ResourceCPU:    resource.MustParse("50m"),
+		},
+	}, getResources(client.Container{
+		Memory:              100000,
+		MemoryReservation:   100000,
+		MilliCpuReservation: 50,
+	}))
+
+	emptyResources := getResources(client.Container{})
+	assert.Equal(t, v1.ResourceList(nil), emptyResources.Limits)
+	assert.Equal(t, v1.ResourceList(nil), emptyResources.Requests)
 }
 
 func TestGetHostAliases(t *testing.T) {

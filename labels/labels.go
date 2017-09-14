@@ -6,6 +6,8 @@ import (
 )
 
 const (
+	RancherLabelPrefix = "io.rancher"
+
 	RevisionLabel       = "io.rancher.revision"
 	DeploymentUuidLabel = "io.rancher.deployment.uuid"
 	ContainerUuidLabel  = "io.rancher.container.uuid"

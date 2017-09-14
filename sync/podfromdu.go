@@ -91,25 +91,20 @@ func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]stri
 
 	annotations[labels.PrimaryContainerName] = transformContainerName(primary.Name)
 
-	for k, v := range primary.Labels {
-		annotations[getAnnotationName(primary.Name, k, true)] = fmt.Sprint(v)
-	}
-
 	for _, container := range deploymentUnit.Containers {
 		for k, v := range container.Labels {
-			annotations[getAnnotationName(container.Name, k, false)] = fmt.Sprint(v)
+			if strings.Contains(k, labels.RancherLabelPrefix) {
+				annotations[getAnnotationName(container.Name, k)] = fmt.Sprint(v)
+			}
 		}
 	}
 
 	return annotations
 }
 
-func getAnnotationName(containerName, label string, primary bool) string {
+func getAnnotationName(containerName, label string) string {
 	if strings.Contains(label, labels.SchedulingLabelPrefix) {
 		label = strings.Replace(label, ":", ".", -1)
-	}
-	if primary {
-		return label
 	}
 	return fmt.Sprintf("%s/%s", transformContainerName(containerName), label)
 }

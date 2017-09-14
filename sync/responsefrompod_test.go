@@ -33,7 +33,7 @@ func TestResponseFromPod(t *testing.T) {
 		ExternalId: "pod1",
 		InstanceStatus: []client.InstanceStatus{
 			{
-				ExternalId:       "docker://id",
+				ExternalId:       "id",
 				InstanceUuid:     "00000000-0000-0000-0000-000000000000",
 				PrimaryIpAddress: "0.0.0.0",
 			},

@@ -3,7 +3,6 @@ package sync
 import (
 	"testing"
 
-	"fmt"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
@@ -16,56 +15,17 @@ import (
 func TestGetLabels(t *testing.T) {
 	assert.Equal(t, getLabels(client.DeploymentSyncRequest{
 		Revision:           "revision",
-		DeploymentUnitUuid: "00000000-0000-0000-0000-000000000000",
-	}), map[string]string{
-		labels.RevisionLabel:       "revision",
-		labels.DeploymentUuidLabel: "00000000-0000-0000-0000-000000000000",
-	})
-}
-
-func TestGetAnnotations(t *testing.T) {
-	assert.Equal(t, getAnnotations(client.DeploymentSyncRequest{
+		DeploymentUnitUuid: "00000000-0000-0000-0000-000000000001",
 		Containers: []client.Container{
 			{
-				Name: "c1",
-				Labels: map[string]interface{}{
-					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
-					"io.rancher.a":             "b",
-				},
-			},
-			{
-				Name: "c2",
-				Labels: map[string]interface{}{
-					"io.rancher.c": "d",
-				},
+				Name: "test",
+				Uuid: "00000000-0000-0000-0000-000000000002",
 			},
 		},
 	}), map[string]string{
-		labels.PrimaryContainerName:                            "c1",
-		"c1/io.rancher.a":                                      "b",
-		fmt.Sprintf("%s/%s", "c1", labels.ServiceLaunchConfig): labels.ServicePrimaryLaunchConfig,
-		"c2/io.rancher.c":                                      "d",
-	})
-
-	assert.Equal(t, getAnnotations(client.DeploymentSyncRequest{
-		Containers: []client.Container{
-			{
-				Name: "c1",
-				Labels: map[string]interface{}{
-					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
-					"a": "b",
-				},
-			},
-			{
-				Name: "c2",
-				Labels: map[string]interface{}{
-					"c": "d",
-				},
-			},
-		},
-	}), map[string]string{
-		labels.PrimaryContainerName:                            "c1",
-		fmt.Sprintf("%s/%s", "c1", labels.ServiceLaunchConfig): labels.ServicePrimaryLaunchConfig,
+		labels.RevisionLabel:        "revision",
+		labels.DeploymentUuidLabel:  "00000000-0000-0000-0000-000000000001",
+		labels.PrimaryContainerName: "test-00000000-0000-0000-0000-000000000002",
 	})
 }
 

@@ -40,10 +40,9 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        getPodName(deploymentUnit),
-			Namespace:   deploymentUnit.Namespace,
-			Labels:      getLabels(deploymentUnit),
-			Annotations: getAnnotations(deploymentUnit),
+			Name:      getPodName(deploymentUnit),
+			Namespace: deploymentUnit.Namespace,
+			Labels:    getLabels(deploymentUnit),
 		},
 		Spec: podSpec,
 	}
@@ -51,7 +50,7 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 func getContainer(container client.Container) v1.Container {
 	return v1.Container{
-		Name:            transformContainerName(container.Name),
+		Name:            getContainerName(container),
 		Image:           container.Image,
 		Command:         container.EntryPoint,
 		Args:            container.Command,
@@ -67,46 +66,23 @@ func getContainer(container client.Container) v1.Container {
 }
 
 func getPodName(deploymentUnit client.DeploymentSyncRequest) string {
-	return fmt.Sprintf("%s-%s", transformContainerName(primary(deploymentUnit).Name), deploymentUnit.DeploymentUnitUuid[:8])
+	return fmt.Sprintf("%s-%s", strings.ToLower(primary(deploymentUnit).Name), deploymentUnit.DeploymentUnitUuid[:8])
 }
 
-func transformContainerName(name string) string {
-	return strings.ToLower(name)
+func getContainerName(container client.Container) string {
+	return fmt.Sprintf("%s-%s", strings.ToLower(container.Name), container.Uuid)
 }
 
 func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 	podLabels := map[string]string{
-		labels.RevisionLabel:       deploymentUnit.Revision,
-		labels.DeploymentUuidLabel: deploymentUnit.DeploymentUnitUuid,
+		labels.RevisionLabel:        deploymentUnit.Revision,
+		labels.DeploymentUuidLabel:  deploymentUnit.DeploymentUnitUuid,
+		labels.PrimaryContainerName: getContainerName(primary(deploymentUnit)),
 	}
 	for k, v := range primary(deploymentUnit).Labels {
 		podLabels[utils.Hash(k)] = utils.Hash(fmt.Sprint(v))
 	}
 	return podLabels
-}
-
-func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]string {
-	primary := primary(deploymentUnit)
-	annotations := map[string]string{}
-
-	annotations[labels.PrimaryContainerName] = transformContainerName(primary.Name)
-
-	for _, container := range deploymentUnit.Containers {
-		for k, v := range container.Labels {
-			if strings.Contains(k, labels.RancherLabelPrefix) {
-				annotations[getAnnotationName(container.Name, k)] = fmt.Sprint(v)
-			}
-		}
-	}
-
-	return annotations
-}
-
-func getAnnotationName(containerName, label string) string {
-	if strings.Contains(label, labels.SchedulingLabelPrefix) {
-		label = strings.Replace(label, ":", ".", -1)
-	}
-	return fmt.Sprintf("%s/%s", transformContainerName(containerName), label)
 }
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {

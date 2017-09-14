@@ -21,5 +21,5 @@ func primary(d client.DeploymentSyncRequest) client.Container {
 }
 
 func primaryContainerNameFromPod(pod v1.Pod) string {
-	return pod.Annotations[labels.PrimaryContainerName]
+	return pod.Labels[labels.PrimaryContainerName]
 }

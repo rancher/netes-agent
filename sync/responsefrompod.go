@@ -2,7 +2,6 @@ package sync
 
 import (
 	"github.com/rancher/go-rancher/v3"
-	"github.com/rancher/netes-agent/labels"
 	"k8s.io/client-go/pkg/api/v1"
 	"strings"
 )
@@ -19,10 +18,9 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 			continue
 		}
 
-		annotationName := getAnnotationName(containerStatus.Name, labels.ContainerUuidLabel)
-		containerUuid, ok := pod.Annotations[annotationName]
-		if !ok {
-			continue
+		var containerUuid string
+		if len(containerStatus.Name) > 36 {
+			containerUuid = containerStatus.Name[len(containerStatus.Name)-36:]
 		}
 
 		instanceStatuses = append(instanceStatuses, client.InstanceStatus{

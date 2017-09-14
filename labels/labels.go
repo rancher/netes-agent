@@ -10,7 +10,6 @@ const (
 
 	RevisionLabel       = "io.rancher.revision"
 	DeploymentUuidLabel = "io.rancher.deployment.uuid"
-	ContainerUuidLabel  = "io.rancher.container.uuid"
 
 	SchedulingLabelPrefix          = "io.rancher.scheduler"
 	GlobalLabel                    = "io.rancher.scheduler.global"

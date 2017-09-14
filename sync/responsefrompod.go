@@ -14,7 +14,7 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 			continue
 		}
 
-		annotationName := getAnnotationName(containerStatus.Name, labels.ContainerUuidLabel, false)
+		annotationName := getAnnotationName(containerStatus.Name, labels.ContainerUuidLabel)
 		containerUuid, ok := pod.Annotations[annotationName]
 		if !ok {
 			continue

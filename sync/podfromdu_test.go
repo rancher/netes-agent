@@ -30,6 +30,29 @@ func TestGetAnnotations(t *testing.T) {
 				Name: "c1",
 				Labels: map[string]interface{}{
 					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
+					"io.rancher.a":             "b",
+				},
+			},
+			{
+				Name: "c2",
+				Labels: map[string]interface{}{
+					"io.rancher.c": "d",
+				},
+			},
+		},
+	}), map[string]string{
+		labels.PrimaryContainerName:                            "c1",
+		"c1/io.rancher.a":                                      "b",
+		fmt.Sprintf("%s/%s", "c1", labels.ServiceLaunchConfig): labels.ServicePrimaryLaunchConfig,
+		"c2/io.rancher.c":                                      "d",
+	})
+
+	assert.Equal(t, getAnnotations(client.DeploymentSyncRequest{
+		Containers: []client.Container{
+			{
+				Name: "c1",
+				Labels: map[string]interface{}{
+					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
 					"a": "b",
 				},
 			},
@@ -41,12 +64,8 @@ func TestGetAnnotations(t *testing.T) {
 			},
 		},
 	}), map[string]string{
-		labels.PrimaryContainerName: "c1",
-		"a": "b",
-		labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
-		"c1/a": "b",
+		labels.PrimaryContainerName:                            "c1",
 		fmt.Sprintf("%s/%s", "c1", labels.ServiceLaunchConfig): labels.ServicePrimaryLaunchConfig,
-		"c2/c": "d",
 	})
 }
 

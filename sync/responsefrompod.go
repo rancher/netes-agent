@@ -4,6 +4,11 @@ import (
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"k8s.io/client-go/pkg/api/v1"
+	"strings"
+)
+
+const (
+	dockerContainerIdPrefix = "docker://"
 )
 
 func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
@@ -21,7 +26,7 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 		}
 
 		instanceStatuses = append(instanceStatuses, client.InstanceStatus{
-			ExternalId:       containerStatus.ContainerID,
+			ExternalId:       strings.Replace(containerStatus.ContainerID, dockerContainerIdPrefix, "", -1),
 			InstanceUuid:     containerUuid,
 			PrimaryIpAddress: pod.Status.PodIP,
 		})

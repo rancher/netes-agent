@@ -29,20 +29,6 @@ var (
 	}
 )
 
-// TODO: move this
-func Primary(d client.DeploymentSyncRequest) client.Container {
-	if len(d.Containers) == 1 {
-		return d.Containers[0]
-	}
-	for _, container := range d.Containers {
-		value, ok := container.Labels[labels.ServiceLaunchConfig]
-		if ok && value == labels.ServicePrimaryLaunchConfig {
-			return container
-		}
-	}
-	return client.Container{}
-}
-
 func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 	containers := []v1.Container{rancherPauseContainer}
 	for _, container := range deploymentUnit.Containers {
@@ -81,7 +67,7 @@ func getContainer(container client.Container) v1.Container {
 }
 
 func getPodName(deploymentUnit client.DeploymentSyncRequest) string {
-	return fmt.Sprintf("%s-%s", transformContainerName(Primary(deploymentUnit).Name), deploymentUnit.DeploymentUnitUuid[:8])
+	return fmt.Sprintf("%s-%s", transformContainerName(primary(deploymentUnit).Name), deploymentUnit.DeploymentUnitUuid[:8])
 }
 
 func transformContainerName(name string) string {
@@ -93,15 +79,17 @@ func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 		labels.RevisionLabel:       deploymentUnit.Revision,
 		labels.DeploymentUuidLabel: deploymentUnit.DeploymentUnitUuid,
 	}
-	for k, v := range Primary(deploymentUnit).Labels {
+	for k, v := range primary(deploymentUnit).Labels {
 		podLabels[utils.Hash(k)] = utils.Hash(fmt.Sprint(v))
 	}
 	return podLabels
 }
 
 func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]string {
-	primary := Primary(deploymentUnit)
+	primary := primary(deploymentUnit)
 	annotations := map[string]string{}
+
+	annotations[labels.PrimaryContainerName] = transformContainerName(primary.Name)
 
 	for k, v := range primary.Labels {
 		annotations[getAnnotationName(primary.Name, k, true)] = fmt.Sprint(v)
@@ -130,12 +118,12 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 	return v1.PodSpec{
 		RestartPolicy:    v1.RestartPolicyNever,
 		HostNetwork:      getHostNetwork(deploymentUnit),
-		HostIPC:          Primary(deploymentUnit).IpcMode == "host",
-		HostPID:          Primary(deploymentUnit).PidMode == "host",
+		HostIPC:          primary(deploymentUnit).IpcMode == "host",
+		HostPID:          primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:        v1.DNSDefault,
 		NodeName:         deploymentUnit.NodeName,
-		Affinity:         getAffinity(Primary(deploymentUnit), deploymentUnit.Namespace),
-		HostAliases:      getHostAliases(Primary(deploymentUnit)),
+		Affinity:         getAffinity(primary(deploymentUnit), deploymentUnit.Namespace),
+		HostAliases:      getHostAliases(primary(deploymentUnit)),
 		Volumes:          getVolumes(deploymentUnit),
 		ImagePullSecrets: getImagePullSecretReferences(deploymentUnit),
 	}
@@ -153,7 +141,7 @@ func getImagePullSecretReferences(deploymentUnit client.DeploymentSyncRequest) [
 }
 
 func getHostNetwork(deploymentUnit client.DeploymentSyncRequest) bool {
-	networkId := Primary(deploymentUnit).PrimaryNetworkId
+	networkId := primary(deploymentUnit).PrimaryNetworkId
 	for _, network := range deploymentUnit.Networks {
 		if network.Id == networkId && network.Kind == hostNetworkingKind {
 			return true

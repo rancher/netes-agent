@@ -48,22 +48,5 @@ func action(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	clusters, err := rancherClient.Cluster.List(&client.ListOpts{
-		Filters: map[string]interface{}{
-			"removed_null": nil,
-			"state_ne":     "removing",
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	manager := manager.New(rancherClient)
-
-	if err := manager.SyncClusters(clusters.Data); err != nil {
-		return err
-	}
-
-	return manager.Listen()
+	return manager.New(rancherClient).Listen()
 }

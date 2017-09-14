@@ -8,9 +8,9 @@ import (
 	"github.com/rancher/go-rancher/v3"
 )
 
-func wrapHandler(handler func(event *events.Event) (*client.Publish, error)) func(event *events.Event, apiClient *client.RancherClient) error {
+func wrapHandler(handler func(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error)) func(event *events.Event, apiClient *client.RancherClient) error {
 	return func(event *events.Event, apiClient *client.RancherClient) error {
-		publish, err := handler(event)
+		publish, err := handler(event, apiClient)
 		if err == nil {
 			return reply(publish, event, apiClient)
 		} else {

@@ -2,6 +2,7 @@ package manager
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
@@ -10,9 +11,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type deploymentSyncHandler func(*kubernetes.Clientset, *watch.Client, client.DeploymentSyncRequest) (client.DeploymentSyncResponse, error)
+type deploymentSyncHandler func(*kubernetes.Clientset, *watch.Client, client.DeploymentSyncRequest, func(client.DeploymentSyncResponse, string)) (client.DeploymentSyncResponse, error)
 
-func (m *Manager) callDeploymentSyncHandler(ignoreUnknown bool, event *events.Event, handler deploymentSyncHandler) (*client.Publish, error) {
+func (m *Manager) callDeploymentSyncHandler(ignoreClusterErrors bool, event *events.Event, apiClient *client.RancherClient, handler deploymentSyncHandler) (*client.Publish, error) {
 	var request client.DeploymentSyncRequest
 	if err := mapstructure.Decode(event.Data["deploymentSyncRequest"], &request); err != nil {
 		return nil, err
@@ -23,29 +24,32 @@ func (m *Manager) callDeploymentSyncHandler(ignoreUnknown bool, event *events.Ev
 		return emptyReply(event), nil
 	}
 
-	errUnknown := fmt.Errorf("unknown cluster %s", request.ClusterId)
-	if ignoreUnknown {
-		errUnknown = nil
+	clientset, watchClient, err := m.getCluster(request.ClusterId)
+	if err != nil {
+		err = fmt.Errorf("Failure with cluster %s: %v", request.ClusterId, err)
+		if ignoreClusterErrors {
+			err = nil
+		}
+		return emptyReply(event), err
 	}
 
-	clientset, ok := m.clientsets.Load(request.ClusterId)
-	if !ok {
-		return emptyReply(event), errUnknown
+	progressResponder := func(progressResponse client.DeploymentSyncResponse, message string) {
+		publish := createPublish(progressResponse, event)
+		publish.Transitioning = "yes"
+		publish.TransitioningMessage = message
+		if err := reply(publish, event, apiClient); err != nil {
+			log.Errorf("Failed to publish progress: %v", err)
+		}
 	}
 
-	watchClient, ok := m.watchClients.Load(request.ClusterId)
-	if !ok {
-		return emptyReply(event), errUnknown
-	}
-
-	response, err := handler(clientset.(*kubernetes.Clientset), watchClient.(*watch.Client), request)
+	response, err := handler(clientset, watchClient, request, progressResponder)
 	return createPublish(response, event), err
 }
 
-func (m *Manager) HandleComputeInstanceActivate(event *events.Event) (*client.Publish, error) {
-	return m.callDeploymentSyncHandler(false, event, sync.Activate)
+func (m *Manager) HandleComputeInstanceActivate(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
+	return m.callDeploymentSyncHandler(false, event, apiClient, sync.Activate)
 }
 
-func (m *Manager) HandleComputeInstanceRemove(event *events.Event) (*client.Publish, error) {
-	return m.callDeploymentSyncHandler(true, event, sync.Remove)
+func (m *Manager) HandleComputeInstanceRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
+	return m.callDeploymentSyncHandler(true, event, apiClient, sync.Remove)
 }

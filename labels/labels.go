@@ -23,6 +23,8 @@ const (
 
 	ServiceLaunchConfig        = "io.rancher.service.launch.config"
 	ServicePrimaryLaunchConfig = "io.rancher.service.primary.launch.config"
+
+	PrimaryContainerName = "io.rancher.container.primary"
 )
 
 func Parse(label interface{}) map[string]string {

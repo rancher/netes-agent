@@ -13,30 +13,22 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func (m *Manager) SyncClusters(clusters []client.Cluster) error {
-	for _, cluster := range clusters {
-		if _, ok := m.clientsets.Load(cluster.Id); !ok {
-			if err := m.addCluster(cluster); err != nil {
-				log.Error(err)
-			}
-		}
+func (m *Manager) getCluster(clusterId string) (*kubernetes.Clientset, *watch.Client, error) {
+	clientsetRaw, _ := m.clientsets.Load(clusterId)
+	watchClientRaw, ok := m.clientsets.Load(clusterId)
+	if ok {
+		return clientsetRaw.(*kubernetes.Clientset), watchClientRaw.(*watch.Client), nil
 	}
-	return nil
-}
-
-func (m *Manager) addOrUpdateCluster(cluster client.Cluster) error {
-	if _, ok := m.clientsets.Load(cluster.Id); ok {
-		if err := m.removeCluster(cluster); err != nil {
-			return err
-		}
+	cluster, err := m.rancherClient.Cluster.ById(clusterId)
+	if err != nil {
+		return nil, nil, err
 	}
 	return m.addCluster(cluster)
 }
 
-func (m *Manager) addCluster(cluster client.Cluster) error {
+func (m *Manager) addCluster(cluster *client.Cluster) (*kubernetes.Clientset, *watch.Client, error) {
 	if cluster.K8sClientConfig == nil {
-		fmt.Println("###")
-		return nil
+		return nil, nil, fmt.Errorf("Cluster %s is missing credentials", cluster.Name)
 	}
 
 	config := &rest.Config{
@@ -53,7 +45,7 @@ func (m *Manager) addCluster(cluster client.Cluster) error {
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	m.clientsets.Store(cluster.Id, clientset)
@@ -63,10 +55,10 @@ func (m *Manager) addCluster(cluster client.Cluster) error {
 
 	log.Infof("Registered cluster %s (%s) at %s", cluster.Name, cluster.Id, config.Host)
 
-	return nil
+	return clientset, watchClient, nil
 }
 
-func (m *Manager) getHost(cluster client.Cluster) string {
+func (m *Manager) getHost(cluster *client.Cluster) string {
 	if m.clusterOverrideURL != "" {
 		return m.clusterOverrideURL + cluster.Id
 	}
@@ -87,16 +79,7 @@ func (m *Manager) removeCluster(cluster client.Cluster) error {
 	return nil
 }
 
-func (m *Manager) handleClusterCreateOrUpdate(event *events.Event) (*client.Publish, error) {
-	var cluster client.Cluster
-	if err := mapstructure.Decode(event.Data["cluster"], &cluster); err != nil {
-		return nil, err
-	}
-	log.Infof("Adding or updating cluster %s", cluster.Name)
-	return emptyReply(event), m.addOrUpdateCluster(cluster)
-}
-
-func (m *Manager) handleClusterRemove(event *events.Event) (*client.Publish, error) {
+func (m *Manager) handleClusterRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
 	var cluster client.Cluster
 	if err := mapstructure.Decode(event.Data["cluster"], &cluster); err != nil {
 		return nil, err

@@ -5,19 +5,21 @@ import (
 
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/watch"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+	"strings"
 )
 
 const (
 	waitTime = time.Second
 )
 
-func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod) (v1.Pod, error) {
+func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(client.DeploymentSyncResponse, string)) (v1.Pod, error) {
 	podName := desiredPod.Name
 	namespace := desiredPod.Namespace
 	desiredRevision := desiredPod.Labels[labels.RevisionLabel]
@@ -39,7 +41,7 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			return v1.Pod{}, err
 		}
 	}
-	return waitForPodContainersToBeReady(watchClient, namespace, podName)
+	return waitForPodContainersToBeReady(watchClient, namespace, podName, progressResponder)
 }
 
 func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName string) (v1.Pod, bool) {
@@ -53,11 +55,21 @@ func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName stri
 	return v1.Pod{}, false
 }
 
-func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string) (v1.Pod, error) {
+func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(client.DeploymentSyncResponse, string)) (v1.Pod, error) {
+	var statusMessage string
 	for i := 0; i < 45; i++ {
-		if existingPod, ok := watchClient.GetPod(namespace, podName); ok && existingPod.Spec.NodeName != "" {
-			if podContainersReady(existingPod) {
-				return existingPod, nil
+		if existingPod, ok := watchClient.GetPod(namespace, podName); ok {
+			primary := primaryContainerNameFromPod(existingPod)
+			for _, container := range existingPod.Status.ContainerStatuses {
+				if container.Name == primary && container.Ready {
+					return existingPod, nil
+				}
+			}
+
+			currentStatusMessage := getPodStatusMessage(existingPod)
+			if currentStatusMessage != statusMessage {
+				progressResponder(responseFromPod(existingPod), currentStatusMessage)
+				statusMessage = currentStatusMessage
 			}
 		}
 		log.Infof("Waiting for containers of pod %s to be ready", podName)
@@ -66,13 +78,14 @@ func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName
 	return v1.Pod{}, fmt.Errorf("Timeout waiting for pod %s", podName)
 }
 
-func podContainersReady(pod v1.Pod) bool {
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if !containerStatus.Ready {
-			return false
+func getPodStatusMessage(pod v1.Pod) string {
+	var conditionMessages []string
+	for _, condition := range pod.Status.Conditions {
+		if condition.Status == "False" {
+			conditionMessages = append(conditionMessages, condition.Message)
 		}
 	}
-	return true
+	return fmt.Sprintf("%s: %s", pod.Status.Phase, strings.Join(conditionMessages, ";"))
 }
 
 func createPod(clientset *kubernetes.Clientset, pod v1.Pod) error {

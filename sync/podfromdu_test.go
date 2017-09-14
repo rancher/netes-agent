@@ -41,6 +41,7 @@ func TestGetAnnotations(t *testing.T) {
 			},
 		},
 	}), map[string]string{
+		labels.PrimaryContainerName: "c1",
 		"a": "b",
 		labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
 		"c1/a": "b",

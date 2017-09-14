@@ -15,7 +15,7 @@ import (
 
 func (m *Manager) getCluster(clusterId string) (*kubernetes.Clientset, *watch.Client, error) {
 	clientsetRaw, _ := m.clientsets.Load(clusterId)
-	watchClientRaw, ok := m.clientsets.Load(clusterId)
+	watchClientRaw, ok := m.watchClients.Load(clusterId)
 	if ok {
 		return clientsetRaw.(*kubernetes.Clientset), watchClientRaw.(*watch.Client), nil
 	}

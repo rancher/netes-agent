@@ -84,7 +84,7 @@ func (m *Manager) removeCluster(cluster client.Cluster) error {
 
 func (m *Manager) handleClusterRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
 	var cluster client.Cluster
-	if err := utils.Convert(event.Data["cluster"], &cluster); err != nil {
+	if err := utils.ConvertByJSON(event.Data["cluster"], &cluster); err != nil {
 		return nil, err
 	}
 	log.Infof("Removing cluster %s", cluster.Name)

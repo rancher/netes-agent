@@ -68,11 +68,11 @@ func getContainer(container client.Container) v1.Container {
 }
 
 func getPodName(deploymentUnit client.DeploymentSyncRequest) string {
-	return fmt.Sprintf("%s-%s", strings.ToLower(primary(deploymentUnit).Name), deploymentUnit.DeploymentUnitUuid[:8])
+	return fmt.Sprintf("%s-%s", trimToLength(strings.ToLower(primary(deploymentUnit).Name), 54), trimToLength(deploymentUnit.DeploymentUnitUuid, 8))
 }
 
 func getContainerName(container client.Container) string {
-	return fmt.Sprintf("%s-%s", strings.ToLower(container.Name), container.Uuid)
+	return fmt.Sprintf("%s-%s", trimToLength(strings.ToLower(container.Name), 26), container.Uuid)
 }
 
 func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
@@ -82,8 +82,10 @@ func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 		labels.PrimaryContainerName: getContainerName(primary(deploymentUnit)),
 	}
 	for k, v := range primary(deploymentUnit).Labels {
-		if kubernetesLabelRegex.MatchString(k) && kubernetesLabelRegex.MatchString(fmt.Sprint(v)) {
-			podLabels[k] = fmt.Sprint(v)
+		key := trimToLength(k, 63)
+		value := trimToLength(fmt.Sprint(v), 63)
+		if kubernetesLabelRegex.MatchString(key) && kubernetesLabelRegex.MatchString(value) {
+			podLabels[key] = value
 		}
 	}
 	for k, v := range primary(deploymentUnit).Labels {

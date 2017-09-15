@@ -3,10 +3,10 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/manager"
+	"github.com/rancher/netes-agent/utils"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +71,7 @@ func simulateEvent(t *testing.T, event events.Event, deploymentUuid string) (*cl
 	assert.NoError(t, err)
 
 	var deploymentSyncResponse client.DeploymentSyncResponse
-	assert.NoError(t, mapstructure.Decode(response.Data["deploymentSyncResponse"], &deploymentSyncResponse))
+	assert.NoError(t, utils.ConvertByJSON(response.Data["deploymentSyncResponse"], &deploymentSyncResponse))
 
 	// ExternalId should not be empty
 	assert.NotEmpty(t, deploymentSyncResponse.ExternalId)
@@ -122,7 +122,7 @@ func getEvent(name string) events.Event {
 
 func modifyEvent(event events.Event, f func(request *client.DeploymentSyncRequest, container *client.Container)) events.Event {
 	var request client.DeploymentSyncRequest
-	if err := mapstructure.Decode(event.Data["deploymentSyncRequest"], &request); err != nil {
+	if err := utils.ConvertByJSON(event.Data["deploymentSyncRequest"], &request); err != nil {
 		panic(err)
 	}
 

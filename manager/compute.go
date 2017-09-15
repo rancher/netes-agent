@@ -3,10 +3,10 @@ package manager
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/sync"
+	"github.com/rancher/netes-agent/utils"
 	"github.com/rancher/netes-agent/watch"
 	"k8s.io/client-go/kubernetes"
 )
@@ -15,7 +15,7 @@ type deploymentSyncHandler func(*kubernetes.Clientset, *watch.Client, client.Dep
 
 func (m *Manager) callDeploymentSyncHandler(ignoreClusterErrors bool, event *events.Event, apiClient *client.RancherClient, handler deploymentSyncHandler) (*client.Publish, error) {
 	var request client.DeploymentSyncRequest
-	if err := mapstructure.Decode(event.Data["deploymentSyncRequest"], &request); err != nil {
+	if err := utils.ConvertByJSON(event.Data["deploymentSyncRequest"], &request); err != nil {
 		return nil, err
 	}
 

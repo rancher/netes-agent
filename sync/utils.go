@@ -23,3 +23,10 @@ func primary(d client.DeploymentSyncRequest) client.Container {
 func primaryContainerNameFromPod(pod v1.Pod) string {
 	return pod.Labels[labels.PrimaryContainerName]
 }
+
+func trimToLength(s string, size int) string {
+	if len(s) > size {
+		return s[:size]
+	}
+	return s
+}

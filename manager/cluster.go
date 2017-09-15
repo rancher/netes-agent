@@ -5,9 +5,9 @@ import (
 
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/mitchellh/mapstructure"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
+	"github.com/rancher/netes-agent/utils"
 	"github.com/rancher/netes-agent/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -84,7 +84,7 @@ func (m *Manager) removeCluster(cluster client.Cluster) error {
 
 func (m *Manager) handleClusterRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
 	var cluster client.Cluster
-	if err := mapstructure.Decode(event.Data["cluster"], &cluster); err != nil {
+	if err := utils.Convert(event.Data["cluster"], &cluster); err != nil {
 		return nil, err
 	}
 	log.Infof("Removing cluster %s", cluster.Name)

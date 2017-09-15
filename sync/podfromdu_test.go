@@ -20,12 +20,21 @@ func TestGetLabels(t *testing.T) {
 			{
 				Name: "test",
 				Uuid: "00000000-0000-0000-0000-000000000002",
+				Labels: map[string]interface{}{
+					"label1":  "value1",
+					"label2!": "value2",
+					"label3":  "value3!",
+				},
 			},
 		},
 	}), map[string]string{
 		labels.RevisionLabel:        "revision",
 		labels.DeploymentUuidLabel:  "00000000-0000-0000-0000-000000000001",
 		labels.PrimaryContainerName: "test-00000000-0000-0000-0000-000000000002",
+		"label1":                    "value1",
+		utils.Hash("label1"):        utils.Hash("value1"),
+		utils.Hash("label2!"):       utils.Hash("value2"),
+		utils.Hash("label3"):        utils.Hash("value3!"),
 	})
 }
 

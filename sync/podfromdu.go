@@ -12,6 +12,7 @@ import (
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"regexp"
 	"strconv"
 )
 
@@ -27,6 +28,7 @@ var (
 		// TODO: figure out where to read this so it's not hard-coded
 		Image: "gcr.io/google_containers/pause-amd64:3.0",
 	}
+	kubernetesLabelRegex = regexp.MustCompile("^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$")
 )
 
 func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
@@ -78,6 +80,11 @@ func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 		labels.RevisionLabel:        deploymentUnit.Revision,
 		labels.DeploymentUuidLabel:  deploymentUnit.DeploymentUnitUuid,
 		labels.PrimaryContainerName: getContainerName(primary(deploymentUnit)),
+	}
+	for k, v := range primary(deploymentUnit).Labels {
+		if kubernetesLabelRegex.MatchString(k) && kubernetesLabelRegex.MatchString(fmt.Sprint(v)) {
+			podLabels[k] = fmt.Sprint(v)
+		}
 	}
 	for k, v := range primary(deploymentUnit).Labels {
 		podLabels[utils.Hash(k)] = utils.Hash(fmt.Sprint(v))

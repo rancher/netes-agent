@@ -23,6 +23,9 @@ func (m *Manager) getCluster(clusterId string) (*kubernetes.Clientset, *watch.Cl
 	if err != nil {
 		return nil, nil, err
 	}
+	if cluster.State == "removing" || cluster.Removed != "" {
+		return nil, nil, fmt.Errorf("Cluster %s is removed or being removed", cluster.Name)
+	}
 	return m.addCluster(cluster)
 }
 

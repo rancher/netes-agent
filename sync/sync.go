@@ -7,7 +7,7 @@ import (
 )
 
 func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest, progressResponder func(client.DeploymentSyncResponse, string)) (client.DeploymentSyncResponse, error) {
-	credentialSecrets := credentialsFromDeploymentUnit(deploymentUnit)
+	credentialSecrets := getCredentialsFromDeploymentUnit(deploymentUnit)
 	if err := reconcileSecrets(clientset, deploymentUnit.Namespace, credentialSecrets); err != nil {
 		return client.DeploymentSyncResponse{}, err
 	}

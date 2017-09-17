@@ -23,11 +23,14 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 			containerUuid = containerStatus.Name[len(containerStatus.Name)-36:]
 		}
 
-		instanceStatuses = append(instanceStatuses, client.InstanceStatus{
-			ExternalId:       strings.Replace(containerStatus.ContainerID, dockerContainerIdPrefix, "", -1),
-			InstanceUuid:     containerUuid,
-			PrimaryIpAddress: pod.Status.PodIP,
-		})
+		instanceStatus := client.InstanceStatus{
+			ExternalId:   strings.Replace(containerStatus.ContainerID, dockerContainerIdPrefix, "", -1),
+			InstanceUuid: containerUuid,
+		}
+		if !pod.Spec.HostNetwork {
+			instanceStatus.PrimaryIpAddress = pod.Status.PodIP
+		}
+		instanceStatuses = append(instanceStatuses, instanceStatus)
 	}
 
 	return client.DeploymentSyncResponse{

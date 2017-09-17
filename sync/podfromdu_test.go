@@ -217,6 +217,22 @@ func TestGetVolumeMounts(t *testing.T) {
 	})), 0)
 }
 
+func TestGetImagePullSecretReferences(t *testing.T) {
+	assert.Equal(t, getImagePullSecretReferences(oneRegistryRequest), []v1.LocalObjectReference{
+		{
+			Name: utils.Hash("https://index.docker.io/v1/" + "username" + "password"),
+		},
+	})
+	assert.Equal(t, getImagePullSecretReferences(twoRegistriesRequest), []v1.LocalObjectReference{
+		{
+			Name: utils.Hash("https://index.docker.io/v1/" + "username1" + "password1"),
+		},
+		{
+			Name: utils.Hash("https://quay.io" + "username2" + "password2"),
+		},
+	})
+}
+
 func TestGetAffinity(t *testing.T) {
 	matchExpressions := getAffinity(client.Container{
 		Labels: map[string]interface{}{

@@ -110,11 +110,11 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 }
 
 func getImagePullSecretReferences(deploymentUnit client.DeploymentSyncRequest) []v1.LocalObjectReference {
+	credentials := getCredentialsFromDeploymentUnit(deploymentUnit)
 	var references []v1.LocalObjectReference
-	for _, registryCredential := range deploymentUnit.RegistryCredentials {
+	for _, credential := range credentials {
 		references = append(references, v1.LocalObjectReference{
-			// TODO: remove hard-coded registry URL
-			Name: getSecretName(dockerRegistry, registryCredential.PublicValue, registryCredential.SecretValue),
+			Name: credential.Name,
 		})
 	}
 	return references

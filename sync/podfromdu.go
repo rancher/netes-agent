@@ -20,6 +20,7 @@ const (
 	rancherPauseContainerName = "rancher-pause"
 	hostNetworkingKind        = "host"
 	hostnameTopologyKey       = "kubernetes.io/hostname"
+	sysctlImage               = "joshwget/sysctl"
 )
 
 var (
@@ -39,6 +40,7 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 	podSpec := getPodSpec(deploymentUnit)
 	podSpec.Containers = containers
+	podSpec.InitContainers = getInitContainers(deploymentUnit)
 
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -92,6 +94,37 @@ func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 		podLabels[utils.Hash(k)] = utils.Hash(fmt.Sprint(v))
 	}
 	return podLabels
+}
+
+func getInitContainers(deploymentUnit client.DeploymentSyncRequest) []v1.Container {
+	sysctlEnvironmentValue := getSysctlEnvironmentValue(deploymentUnit)
+	if sysctlEnvironmentValue == "" {
+		return nil
+	}
+	return []v1.Container{
+		{
+			Name:  "sysctl",
+			Image: sysctlImage,
+			SecurityContext: &v1.SecurityContext{
+				Privileged: &[]bool{true}[0],
+			},
+			Env: []v1.EnvVar{
+				{
+					Name:  "SYSCTL",
+					Value: sysctlEnvironmentValue,
+				},
+			},
+		},
+	}
+}
+
+func getSysctlEnvironmentValue(deploymentUnit client.DeploymentSyncRequest) string {
+	primary := primary(deploymentUnit)
+	var sysctls []string
+	for k, v := range primary.Sysctls {
+		sysctls = append(sysctls, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(sysctls, ",")
 }
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {

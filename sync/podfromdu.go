@@ -129,17 +129,26 @@ func getSysctlEnvironmentValue(deploymentUnit client.DeploymentSyncRequest) stri
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 	return v1.PodSpec{
-		RestartPolicy:    v1.RestartPolicyNever,
-		HostNetwork:      getHostNetwork(deploymentUnit),
-		HostIPC:          primary(deploymentUnit).IpcMode == "host",
-		HostPID:          primary(deploymentUnit).PidMode == "host",
-		DNSPolicy:        v1.DNSDefault,
-		NodeName:         deploymentUnit.NodeName,
-		Affinity:         getAffinity(primary(deploymentUnit), deploymentUnit.Namespace),
-		HostAliases:      getHostAliases(primary(deploymentUnit)),
-		Volumes:          getVolumes(deploymentUnit),
-		ImagePullSecrets: getImagePullSecretReferences(deploymentUnit),
+		RestartPolicy:      v1.RestartPolicyNever,
+		HostNetwork:        getHostNetwork(deploymentUnit),
+		HostIPC:            primary(deploymentUnit).IpcMode == "host",
+		HostPID:            primary(deploymentUnit).PidMode == "host",
+		DNSPolicy:          v1.DNSDefault,
+		NodeName:           deploymentUnit.NodeName,
+		Affinity:           getAffinity(primary(deploymentUnit), deploymentUnit.Namespace),
+		HostAliases:        getHostAliases(primary(deploymentUnit)),
+		Volumes:            getVolumes(deploymentUnit),
+		ImagePullSecrets:   getImagePullSecretReferences(deploymentUnit),
+		ServiceAccountName: getServiceAccountName(deploymentUnit),
 	}
+}
+
+func getServiceAccountName(deploymentUnit client.DeploymentSyncRequest) string {
+	serviceAccount, ok := primary(deploymentUnit).Labels[labels.ServiceAccountLabel]
+	if !ok {
+		return ""
+	}
+	return fmt.Sprint(serviceAccount)
 }
 
 func getImagePullSecretReferences(deploymentUnit client.DeploymentSyncRequest) []v1.LocalObjectReference {

@@ -26,6 +26,8 @@ const (
 	ServicePrimaryLaunchConfig = "io.rancher.service.primary.launch.config"
 
 	PrimaryContainerName = "io.rancher.container.primary"
+
+	ServiceAccountLabel = "io.rancher.kubernetes.service_account"
 )
 
 func Parse(label interface{}) map[string]string {

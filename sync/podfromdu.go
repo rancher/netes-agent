@@ -47,6 +47,7 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 			Name:      getPodName(deploymentUnit),
 			Namespace: deploymentUnit.Namespace,
 			Labels:    getLabels(deploymentUnit),
+			Annotations: getAnnotations(deploymentUnit),
 		},
 		Spec: podSpec,
 	}
@@ -75,6 +76,18 @@ func getPodName(deploymentUnit client.DeploymentSyncRequest) string {
 
 func getContainerName(container client.Container) string {
 	return fmt.Sprintf("%s-%s", trimToLength(strings.ToLower(container.Name), 26), container.Uuid)
+}
+
+func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]string {
+	annotations := map[string]string{}
+
+	for k, v := range primary(deploymentUnit).Labels {
+		if strings.HasPrefix(k, "io.rancher") {
+			annotations[k] = v
+		}
+	}
+
+	return annotations
 }
 
 func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {

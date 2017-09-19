@@ -20,7 +20,7 @@ func TestGetLabels(t *testing.T) {
 			{
 				Name: "test",
 				Uuid: "00000000-0000-0000-0000-000000000002",
-				Labels: map[string]interface{}{
+				Labels: map[string]string{
 					"label1":  "value1",
 					"label2!": "value2",
 					"label3":  "value3!",
@@ -51,7 +51,7 @@ func TestGetPodSpec(t *testing.T) {
 	assert.Equal(t, getPodSpec(client.DeploymentSyncRequest{
 		Containers: []client.Container{
 			{
-				Labels: map[string]interface{}{
+				Labels: map[string]string{
 					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
 				},
 				RestartPolicy: &client.RestartPolicy{
@@ -163,8 +163,8 @@ func TestGetVolumes(t *testing.T) {
 	assert.Equal(t, getVolumes(client.DeploymentSyncRequest{
 		Containers: []client.Container{
 			{
-				Tmpfs: map[string]interface{}{
-					"/dir": true,
+				Tmpfs: map[string]string{
+					"/dir": "true",
 				},
 			},
 		},
@@ -201,8 +201,8 @@ func TestGetVolumeMounts(t *testing.T) {
 		},
 	})
 	assert.Equal(t, getVolumeMounts(client.Container{
-		Tmpfs: map[string]interface{}{
-			"/dir": true,
+		Tmpfs: map[string]string{
+			"/dir": "true",
 		},
 	}), []v1.VolumeMount{
 		{
@@ -235,7 +235,7 @@ func TestGetImagePullSecretReferences(t *testing.T) {
 
 func TestGetAffinity(t *testing.T) {
 	matchExpressions := getAffinity(client.Container{
-		Labels: map[string]interface{}{
+		Labels: map[string]string{
 			labels.HostAffinityLabel:     "key1=val1,key2=val2",
 			labels.HostAntiAffinityLabel: "key3=val3,key4=val4",
 		},
@@ -275,7 +275,7 @@ func TestGetAffinity(t *testing.T) {
 	}
 
 	matchExpressions = getAffinity(client.Container{
-		Labels: map[string]interface{}{
+		Labels: map[string]string{
 			labels.HostSoftAffinityLabel:     "key1=val1,key2=val2",
 			labels.HostSoftAntiAffinityLabel: "key3=val3,key4=val4",
 		},
@@ -315,7 +315,7 @@ func TestGetAffinity(t *testing.T) {
 	}
 
 	podAffinityTerms := getAffinity(client.Container{
-		Labels: map[string]interface{}{
+		Labels: map[string]string{
 			labels.ContainerAffinityLabel:     "key1=val1,key2=val2",
 			labels.ContainerAntiAffinityLabel: "key3=val3,key4=val4",
 		},
@@ -359,7 +359,7 @@ func TestGetAffinity(t *testing.T) {
 	}
 
 	weightedPodAffinityTerms := getAffinity(client.Container{
-		Labels: map[string]interface{}{
+		Labels: map[string]string{
 			labels.ContainerSoftAffinityLabel:     "key1=val1,key2=val2",
 			labels.ContainerSoftAntiAffinityLabel: "key3=val3,key4=val4",
 		},

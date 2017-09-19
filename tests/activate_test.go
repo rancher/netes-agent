@@ -9,11 +9,11 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	simulateEvent(t, basicEvent, nextDeploymentUuid())
+	simulateEvent(t, basicEvent, nextDeploymentUUID())
 }
 
 func TestPodSpec(t *testing.T) {
-	_, pod := simulateEvent(t, podSpecEvent, nextDeploymentUuid())
+	_, pod := simulateEvent(t, podSpecEvent, nextDeploymentUUID())
 	assert.True(t, len(pod.Status.ContainerStatuses) > 0)
 
 	assert.Equal(t, pod.Spec.RestartPolicy, v1.RestartPolicyNever)
@@ -23,7 +23,7 @@ func TestPodSpec(t *testing.T) {
 }
 
 func TestContainerSpec(t *testing.T) {
-	_, pod := simulateEvent(t, containerSpecEvent, nextDeploymentUuid())
+	_, pod := simulateEvent(t, containerSpecEvent, nextDeploymentUUID())
 	container := getNonPauseContainer(t, pod)
 
 	assert.Equal(t, container.TTY, true)
@@ -34,14 +34,14 @@ func TestContainerSpec(t *testing.T) {
 }
 
 func TestSecurityContext(t *testing.T) {
-	_, pod := simulateEvent(t, securityContextEvent, nextDeploymentUuid())
+	_, pod := simulateEvent(t, securityContextEvent, nextDeploymentUUID())
 	container := getNonPauseContainer(t, pod)
 
 	assert.Equal(t, fmt.Sprint(container.SecurityContext.Capabilities.Add[0]), "SYS_NICE")
 }
 
 func TestUpgrade(t *testing.T) {
-	_, pod := simulateEvent(t, securityContextEvent, nextDeploymentUuid())
+	_, pod := simulateEvent(t, securityContextEvent, nextDeploymentUUID())
 	container := getNonPauseContainer(t, pod)
 
 	assert.Equal(t, container.Image, "nginx")
@@ -53,6 +53,6 @@ func TestUpgrade(t *testing.T) {
 }
 
 func TestAlternateNamespace(t *testing.T) {
-	_, pod := simulateEvent(t, alternateNamespaceEvent, nextDeploymentUuid())
+	_, pod := simulateEvent(t, alternateNamespaceEvent, nextDeploymentUUID())
 	assert.Equal(t, pod.Namespace, "testnamespace")
 }

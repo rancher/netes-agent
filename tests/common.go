@@ -25,7 +25,7 @@ const (
 var (
 	clientset      *kubernetes.Clientset
 	testManager    *manager.Manager
-	deploymentUuid = 0
+	deploymentUUID = 0
 )
 
 func init() {
@@ -50,18 +50,18 @@ func init() {
 	})
 }
 
-func nextDeploymentUuid() string {
-	deploymentUuid += 1
-	return fmt.Sprintf("%08d", deploymentUuid)
+func nextDeploymentUUID() string {
+	deploymentUUID++
+	return fmt.Sprintf("%08d", deploymentUUID)
 }
 
-func simulateEvent(t *testing.T, event events.Event, deploymentUuid string) (*client.Publish, v1.Pod) {
+func simulateEvent(t *testing.T, event events.Event, deploymentUUID string) (*client.Publish, v1.Pod) {
 	// Save namespace and container UUIDS for later testing
 	var namespace string
 	var containerUuids []string
 	modifyEvent(event, func(request *client.DeploymentSyncRequest, _ *client.Container) {
 		namespace = request.Namespace
-		request.DeploymentUnitUuid = deploymentUuid
+		request.DeploymentUnitUuid = deploymentUUID
 		for _, container := range request.Containers {
 			containerUuids = append(containerUuids, container.Uuid)
 		}

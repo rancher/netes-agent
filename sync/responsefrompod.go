@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	dockerContainerIdPrefix = "docker://"
+	dockerContainerIDPrefix = "docker://"
 )
 
 func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
@@ -18,14 +18,14 @@ func responseFromPod(pod v1.Pod) client.DeploymentSyncResponse {
 			continue
 		}
 
-		var containerUuid string
+		var containerUUID string
 		if len(containerStatus.Name) > 36 {
-			containerUuid = containerStatus.Name[len(containerStatus.Name)-36:]
+			containerUUID = containerStatus.Name[len(containerStatus.Name)-36:]
 		}
 
 		instanceStatus := client.InstanceStatus{
-			ExternalId:   strings.Replace(containerStatus.ContainerID, dockerContainerIdPrefix, "", -1),
-			InstanceUuid: containerUuid,
+			ExternalId:   strings.Replace(containerStatus.ContainerID, dockerContainerIDPrefix, "", -1),
+			InstanceUuid: containerUUID,
 		}
 		if !pod.Spec.HostNetwork {
 			instanceStatus.PrimaryIpAddress = pod.Status.PodIP

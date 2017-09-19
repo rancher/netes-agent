@@ -3,17 +3,16 @@ package sync
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"regexp"
-	"strconv"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 const (
@@ -44,9 +43,9 @@ func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
 
 	return v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getPodName(deploymentUnit),
-			Namespace: deploymentUnit.Namespace,
-			Labels:    getLabels(deploymentUnit),
+			Name:        getPodName(deploymentUnit),
+			Namespace:   deploymentUnit.Namespace,
+			Labels:      getLabels(deploymentUnit),
 			Annotations: getAnnotations(deploymentUnit),
 		},
 		Spec: podSpec,
@@ -93,7 +92,7 @@ func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]stri
 func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 	podLabels := map[string]string{
 		labels.RevisionLabel:        deploymentUnit.Revision,
-		labels.DeploymentUuidLabel:  deploymentUnit.DeploymentUnitUuid,
+		labels.DeploymentUUIDLabel:  deploymentUnit.DeploymentUnitUuid,
 		labels.PrimaryContainerName: getContainerName(primary(deploymentUnit)),
 	}
 	for k, v := range primary(deploymentUnit).Labels {
@@ -176,9 +175,9 @@ func getImagePullSecretReferences(deploymentUnit client.DeploymentSyncRequest) [
 }
 
 func getHostNetwork(deploymentUnit client.DeploymentSyncRequest) bool {
-	networkId := primary(deploymentUnit).PrimaryNetworkId
+	networkID := primary(deploymentUnit).PrimaryNetworkId
 	for _, network := range deploymentUnit.Networks {
-		if network.Id == networkId && network.Kind == hostNetworkingKind {
+		if network.Id == networkID && network.Kind == hostNetworkingKind {
 			return true
 		}
 	}

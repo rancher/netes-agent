@@ -29,7 +29,7 @@ func TestGetLabels(t *testing.T) {
 		},
 	}), map[string]string{
 		labels.RevisionLabel:        "revision",
-		labels.DeploymentUuidLabel:  "00000000-0000-0000-0000-000000000001",
+		labels.DeploymentUUIDLabel:  "00000000-0000-0000-0000-000000000001",
 		labels.PrimaryContainerName: "test-00000000-0000-0000-0000-000000000002",
 		"label1":                    "value1",
 		utils.Hash("label1"):        utils.Hash("value1"),

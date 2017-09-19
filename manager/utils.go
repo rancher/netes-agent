@@ -13,9 +13,8 @@ func wrapHandler(handler func(event *events.Event, apiClient *client.RancherClie
 		publish, err := handler(event, apiClient)
 		if err == nil {
 			return reply(publish, event, apiClient)
-		} else {
-			return err
 		}
+		return err
 	}
 }
 

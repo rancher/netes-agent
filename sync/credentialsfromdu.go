@@ -25,15 +25,15 @@ func getCredentialsFromDeploymentUnit(deploymentUnit client.DeploymentSyncReques
 	var imagePullCredentials []v1.Secret
 	secretNames := map[string]bool{}
 	for _, container := range deploymentUnit.Containers {
-		registryUrl := getRegistryUrlFromImage(container.Image)
-		if registryUrl == "" {
+		registryURL := getRegistryURLFromImage(container.Image)
+		if registryURL == "" {
 			continue
 		}
 		registryCredential, ok := registryCredentialsMap[container.RegistryCredentialId]
 		if !ok {
 			continue
 		}
-		secret := getSecret(registryCredential, registryUrl, deploymentUnit.Namespace)
+		secret := getSecret(registryCredential, registryURL, deploymentUnit.Namespace)
 		if _, ok := secretNames[secret.Name]; !ok {
 			imagePullCredentials = append(imagePullCredentials, secret)
 			secretNames[secret.Name] = true
@@ -42,7 +42,7 @@ func getCredentialsFromDeploymentUnit(deploymentUnit client.DeploymentSyncReques
 	return imagePullCredentials
 }
 
-func getRegistryUrlFromImage(image string) string {
+func getRegistryURLFromImage(image string) string {
 	named, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return ""

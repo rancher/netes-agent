@@ -13,13 +13,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func (m *Manager) getCluster(clusterId string) (*kubernetes.Clientset, *watch.Client, error) {
-	clientsetRaw, _ := m.clientsets.Load(clusterId)
-	watchClientRaw, ok := m.watchClients.Load(clusterId)
+func (m *Manager) getCluster(clusterID string) (*kubernetes.Clientset, *watch.Client, error) {
+	clientsetRaw, _ := m.clientsets.Load(clusterID)
+	watchClientRaw, ok := m.watchClients.Load(clusterID)
 	if ok {
 		return clientsetRaw.(*kubernetes.Clientset), watchClientRaw.(*watch.Client), nil
 	}
-	cluster, err := m.rancherClient.Cluster.ById(clusterId)
+	cluster, err := m.rancherClient.Cluster.ById(clusterID)
 	if err != nil {
 		return nil, nil, err
 	}

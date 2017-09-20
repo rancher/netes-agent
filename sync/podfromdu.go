@@ -27,6 +27,12 @@ var (
 		Name: rancherPauseContainerName,
 		// TODO: figure out where to read this so it's not hard-coded
 		Image: "gcr.io/google_containers/pause-amd64:3.0",
+		Resources: v1.ResourceRequirements{
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("0"),
+				v1.ResourceCPU:    resource.MustParse("0"),
+			},
+		},
 	}
 	kubernetesLabelRegex = regexp.MustCompile("^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$")
 )
@@ -381,33 +387,27 @@ func getEnvironment(container client.Container) []v1.EnvVar {
 // TODO: CPU limit
 func getResources(container client.Container) v1.ResourceRequirements {
 	limits := v1.ResourceList{}
-	requests := v1.ResourceList{}
 	if container.Memory != 0 {
 		memoryLimitQuantity, err := resource.ParseQuantity(fmt.Sprint(container.Memory))
 		if err == nil {
 			limits[v1.ResourceMemory] = memoryLimitQuantity
 		}
 	}
-	if container.MemoryReservation != 0 {
-		memoryRequestQuantity, err := resource.ParseQuantity(fmt.Sprint(container.MemoryReservation))
-		if err == nil {
-			requests[v1.ResourceMemory] = memoryRequestQuantity
-		}
+	requests := v1.ResourceList{}
+	memoryRequestQuantity, err := resource.ParseQuantity(fmt.Sprint(container.MemoryReservation))
+	if err == nil {
+		requests[v1.ResourceMemory] = memoryRequestQuantity
 	}
-	if container.MilliCpuReservation != 0 {
-		cpuRequestQuantity, err := resource.ParseQuantity(fmt.Sprintf("%dm", container.MilliCpuReservation))
-		if err == nil {
-			requests[v1.ResourceCPU] = cpuRequestQuantity
-		}
+	cpuRequestQuantity, err := resource.ParseQuantity(fmt.Sprintf("%dm", container.MilliCpuReservation))
+	if err == nil {
+		requests[v1.ResourceCPU] = cpuRequestQuantity
 	}
 
 	var resourceRequirements v1.ResourceRequirements
 	if len(limits) > 0 {
 		resourceRequirements.Limits = limits
 	}
-	if len(requests) > 0 {
-		resourceRequirements.Requests = requests
-	}
+	resourceRequirements.Requests = requests
 	return resourceRequirements
 }
 

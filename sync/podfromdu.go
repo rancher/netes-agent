@@ -87,7 +87,7 @@ func getAnnotations(deploymentUnit client.DeploymentSyncRequest) map[string]stri
 	annotations := map[string]string{}
 
 	for k, v := range primary(deploymentUnit).Labels {
-		if strings.HasPrefix(k, "io.rancher") {
+		if strings.HasPrefix(k, labels.RancherLabelPrefix) && kubernetesLabelRegex.MatchString(k) {
 			annotations[k] = v
 		}
 	}

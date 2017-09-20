@@ -7,13 +7,11 @@ import (
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/sync"
 	"github.com/rancher/netes-agent/utils"
-	"github.com/rancher/netes-agent/watch"
-	"k8s.io/client-go/kubernetes"
 )
 
-type deploymentSyncHandler func(*kubernetes.Clientset, *watch.Client, client.DeploymentSyncRequest, func(client.DeploymentSyncResponse, string)) (client.DeploymentSyncResponse, error)
+type deploymentSyncHandler func(request client.DeploymentSyncRequest) (*client.Publish, error)
 
-func (m *Manager) callDeploymentSyncHandler(ignoreClusterErrors bool, event *events.Event, apiClient *client.RancherClient, handler deploymentSyncHandler) (*client.Publish, error) {
+func callDeploymentSyncHandler(event *events.Event, handler deploymentSyncHandler) (*client.Publish, error) {
 	var request client.DeploymentSyncRequest
 	if err := utils.ConvertByJSON(event.Data["deploymentSyncRequest"], &request); err != nil {
 		return nil, err
@@ -24,32 +22,42 @@ func (m *Manager) callDeploymentSyncHandler(ignoreClusterErrors bool, event *eve
 		return emptyReply(event), nil
 	}
 
-	clientset, watchClient, err := m.getCluster(request.ClusterId)
-	if err != nil {
-		err = fmt.Errorf("Failure with cluster %s: %v", request.ClusterId, err)
-		if ignoreClusterErrors {
-			err = nil
-		}
-		return emptyReply(event), err
-	}
-
-	progressResponder := func(progressResponse client.DeploymentSyncResponse, message string) {
-		publish := createPublish(progressResponse, event)
-		publish.Transitioning = "yes"
-		publish.TransitioningMessage = message
-		if err := reply(publish, event, apiClient); err != nil {
-			log.Errorf("Failed to publish progress: %v", err)
-		}
-	}
-
-	response, err := handler(clientset, watchClient, request, progressResponder)
-	return createPublish(response, event), err
+	return handler(request)
 }
 
 func (m *Manager) HandleComputeInstanceActivate(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
-	return m.callDeploymentSyncHandler(false, event, apiClient, sync.Activate)
+	return callDeploymentSyncHandler(event, func(request client.DeploymentSyncRequest) (*client.Publish, error) {
+		clientset, watchClient, err := m.getCluster(request.ClusterId)
+		if err != nil {
+			return nil, fmt.Errorf("Failure with cluster %s: %v", request.ClusterId, err)
+		}
+
+		progressResponder := func(progressResponse *client.DeploymentSyncResponse, message string) {
+			publish := createPublish(progressResponse, event)
+			publish.Transitioning = "yes"
+			publish.TransitioningMessage = message
+			if err := reply(publish, event, apiClient); err != nil {
+				log.Errorf("Failed to publish progress: %v", err)
+			}
+		}
+
+		response, err := sync.Activate(clientset, watchClient, request, progressResponder)
+		if err != nil {
+			return nil, err
+		}
+		if response == nil {
+			return nil, nil
+		}
+		return createPublish(response, event), nil
+	})
 }
 
 func (m *Manager) HandleComputeInstanceRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
-	return m.callDeploymentSyncHandler(true, event, apiClient, sync.Remove)
+	return callDeploymentSyncHandler(event, func(request client.DeploymentSyncRequest) (*client.Publish, error) {
+		clientset, watchClient, err := m.getCluster(request.ClusterId)
+		if err != nil {
+			return emptyReply(event), nil
+		}
+		return emptyReply(event), sync.Remove(clientset, watchClient, request)
+	})
 }

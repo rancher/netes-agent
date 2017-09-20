@@ -19,7 +19,7 @@ const (
 	waitTime = time.Second
 )
 
-func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(client.DeploymentSyncResponse, string)) (v1.Pod, error) {
+func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(*client.DeploymentSyncResponse, string)) (*v1.Pod, error) {
 	podName := desiredPod.Name
 	namespace := desiredPod.Namespace
 	desiredRevision := desiredPod.Labels[labels.RevisionLabel]
@@ -34,48 +34,49 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			if existingPod.Labels[labels.RevisionLabel] != desiredRevision {
 				log.Infof("Pod %s has old revision", podName)
 				if err := deletePod(clientset, watchClient, namespace, podName); err != nil {
-					return v1.Pod{}, err
+					return nil, err
 				}
 			}
 		} else if err != nil {
-			return v1.Pod{}, err
+			return nil, err
 		}
 	}
-	return waitForPodContainersToBeReady(watchClient, namespace, podName, progressResponder)
+	return waitForPodContainersToBeReady(watchClient, namespace, podName, progressResponder), nil
 }
 
-func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName string) (v1.Pod, bool) {
+func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName string) (*v1.Pod, bool) {
 	for i := 0; i < 3; i++ {
 		existingPod, ok := watchClient.GetPod(namespace, podName)
 		if ok {
-			return existingPod, true
+			return &existingPod, true
 		}
 		time.Sleep(waitTime)
 	}
-	return v1.Pod{}, false
+	return nil, false
 }
 
-func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(client.DeploymentSyncResponse, string)) (v1.Pod, error) {
+func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(*client.DeploymentSyncResponse, string)) *v1.Pod {
 	var statusMessage string
 	for i := 0; i < 45; i++ {
 		if existingPod, ok := watchClient.GetPod(namespace, podName); ok {
 			primary := primaryContainerNameFromPod(existingPod)
 			for _, container := range existingPod.Status.ContainerStatuses {
 				if container.Name == primary && container.Ready {
-					return existingPod, nil
+					return &existingPod
 				}
 			}
 
 			currentStatusMessage := getPodStatusMessage(existingPod)
 			if currentStatusMessage != statusMessage {
-				progressResponder(responseFromPod(existingPod), currentStatusMessage)
+				response := responseFromPod(existingPod)
+				progressResponder(&response, currentStatusMessage)
 				statusMessage = currentStatusMessage
 			}
 		}
 		log.Infof("Waiting for containers of pod %s to be ready", podName)
 		time.Sleep(waitTime)
 	}
-	return v1.Pod{}, fmt.Errorf("Timeout waiting for pod %s", podName)
+	return nil
 }
 
 func getPodStatusMessage(pod v1.Pod) string {

@@ -6,24 +6,29 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest, progressResponder func(client.DeploymentSyncResponse, string)) (client.DeploymentSyncResponse, error) {
+func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest, progressResponder func(*client.DeploymentSyncResponse, string)) (*client.DeploymentSyncResponse, error) {
 	credentialSecrets := getCredentialsFromDeploymentUnit(deploymentUnit)
 	if err := reconcileSecrets(clientset, deploymentUnit.Namespace, credentialSecrets); err != nil {
-		return client.DeploymentSyncResponse{}, err
+		return nil, err
 	}
 
 	pod := podFromDeploymentUnit(deploymentUnit)
 	createdPod, err := reconcilePod(clientset, watchClient, pod, progressResponder)
 	if err != nil {
-		return client.DeploymentSyncResponse{}, err
+		return nil, err
 	}
-	return responseFromPod(createdPod), nil
+	if createdPod == nil {
+		return nil, nil
+	}
+
+	response := responseFromPod(*createdPod)
+	return &response, nil
 }
 
-func Remove(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest, _ func(client.DeploymentSyncResponse, string)) (client.DeploymentSyncResponse, error) {
+func Remove(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest) error {
 	podName := deploymentUnit.ExternalId
 	if podName == "" {
 		podName = getPodName(deploymentUnit)
 	}
-	return client.DeploymentSyncResponse{}, deletePod(clientset, watchClient, deploymentUnit.Namespace, podName)
+	return deletePod(clientset, watchClient, deploymentUnit.Namespace, podName)
 }

@@ -123,7 +123,10 @@ func TestGetResources(t *testing.T) {
 
 	emptyResources := getResources(client.Container{})
 	assert.Equal(t, v1.ResourceList(nil), emptyResources.Limits)
-	assert.Equal(t, v1.ResourceList(nil), emptyResources.Requests)
+	assert.Equal(t, v1.ResourceList(v1.ResourceList{
+		v1.ResourceMemory: resource.MustParse("0"),
+		v1.ResourceCPU:    resource.MustParse("0m"),
+	}), emptyResources.Requests)
 }
 
 func TestGetHostAliases(t *testing.T) {

@@ -11,10 +11,13 @@ import (
 func wrapHandler(handler func(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error)) func(event *events.Event, apiClient *client.RancherClient) error {
 	return func(event *events.Event, apiClient *client.RancherClient) error {
 		publish, err := handler(event, apiClient)
-		if err == nil {
+		if err != nil {
+			return err
+		}
+		if publish != nil {
 			return reply(publish, event, apiClient)
 		}
-		return err
+		return nil
 	}
 }
 
@@ -25,7 +28,7 @@ func emptyReply(event *events.Event) *client.Publish {
 	}
 }
 
-func createPublish(response client.DeploymentSyncResponse, event *events.Event) *client.Publish {
+func createPublish(response *client.DeploymentSyncResponse, event *events.Event) *client.Publish {
 	reply := emptyReply(event)
 	reply.Data = map[string]interface{}{
 		"deploymentSyncResponse": response,

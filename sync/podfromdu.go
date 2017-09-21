@@ -19,7 +19,7 @@ const (
 	rancherPauseContainerName = "rancher-pause"
 	hostNetworkingKind        = "host"
 	hostnameTopologyKey       = "kubernetes.io/hostname"
-	sysctlImage               = "joshwget/sysctl"
+	podSetupImage             = "joshwget/pod-setup"
 )
 
 var (
@@ -38,10 +38,11 @@ var (
 )
 
 func podFromDeploymentUnit(deploymentUnit client.DeploymentSyncRequest) v1.Pod {
-	containers := []v1.Container{rancherPauseContainer}
+	var containers []v1.Container
 	for _, container := range deploymentUnit.Containers {
 		containers = append(containers, getContainer(container))
 	}
+	containers = append(containers, rancherPauseContainer)
 
 	podSpec := getPodSpec(deploymentUnit)
 	podSpec.Containers = containers
@@ -115,34 +116,54 @@ func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 }
 
 func getInitContainers(deploymentUnit client.DeploymentSyncRequest) []v1.Container {
-	sysctlEnvironmentValue := getSysctlEnvironmentValue(deploymentUnit)
-	if sysctlEnvironmentValue == "" {
-		return nil
+	var initContainers []v1.Container
+	primary := primary(deploymentUnit)
+
+	var sysctls []string
+	for k, v := range primary.Sysctls {
+		sysctls = append(sysctls, fmt.Sprintf("%s=%s", k, v))
 	}
-	return []v1.Container{
-		{
+	if len(sysctls) > 0 {
+		initContainers = append(initContainers, v1.Container{
 			Name:  "sysctl",
-			Image: sysctlImage,
+			Image: podSetupImage,
 			SecurityContext: &v1.SecurityContext{
 				Privileged: &[]bool{true}[0],
 			},
 			Env: []v1.EnvVar{
 				{
 					Name:  "SYSCTL",
-					Value: sysctlEnvironmentValue,
+					Value: strings.Join(sysctls, ","),
 				},
 			},
-		},
+		})
 	}
-}
 
-func getSysctlEnvironmentValue(deploymentUnit client.DeploymentSyncRequest) string {
-	primary := primary(deploymentUnit)
-	var sysctls []string
-	for k, v := range primary.Sysctls {
-		sysctls = append(sysctls, fmt.Sprintf("%s=%s", k, v))
+	if value, ok := primary.Labels[labels.RancherDNS]; ok && value == "true" {
+		appendEnvironmentValue := "false"
+		if priority, ok := primary.Labels[labels.RancherDNSPriority]; ok && priority == "service_last" {
+			appendEnvironmentValue = "true"
+		}
+		if search, ok := primary.Labels[labels.RancherDNSSearch]; ok {
+			searchEnvironmentValue := "search " + strings.Join(strings.Split(search, ","), " ")
+			initContainers = append(initContainers, v1.Container{
+				Name:  "dns-init",
+				Image: podSetupImage,
+				Env: []v1.EnvVar{
+					{
+						Name:  "DNS_APPEND",
+						Value: appendEnvironmentValue,
+					},
+					{
+						Name:  "DNS_SEARCH",
+						Value: searchEnvironmentValue,
+					},
+				},
+			})
+		}
 	}
-	return strings.Join(sysctls, ",")
+
+	return initContainers
 }
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {

@@ -145,7 +145,7 @@ func getInitContainers(deploymentUnit client.DeploymentSyncRequest) []v1.Contain
 			appendEnvironmentValue = "true"
 		}
 		if search, ok := primary.Labels[labels.RancherDNSSearch]; ok {
-			searchEnvironmentValue := "search " + strings.Join(strings.Split(search, ","), " ")
+			searchEnvironmentValue := strings.Join(strings.Split(search, ","), " ")
 			initContainers = append(initContainers, v1.Container{
 				Name:  "dns-init",
 				Image: podSetupImage,

@@ -24,6 +24,9 @@ const (
 
 	ServiceLaunchConfig        = "io.rancher.service.launch.config"
 	ServicePrimaryLaunchConfig = "io.rancher.service.primary.launch.config"
+	RancherDNS                 = "io.rancher.container.dns"
+	RancherDNSPriority         = "io.rancher.container.dns.priority"
+	RancherDNSSearch           = "io.rancher.container.dnssearch"
 
 	PrimaryContainerName = "io.rancher.container.primary"
 

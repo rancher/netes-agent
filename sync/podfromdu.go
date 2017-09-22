@@ -19,7 +19,7 @@ const (
 	rancherPauseContainerName = "rancher-pause"
 	hostNetworkingKind        = "host"
 	hostnameTopologyKey       = "kubernetes.io/hostname"
-	podSetupImage             = "joshwget/pod-setup"
+	podSetupImage             = "rancher/pod-setup:v0.1.0"
 )
 
 var (

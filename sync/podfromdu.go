@@ -103,6 +103,10 @@ func getLabels(deploymentUnit client.DeploymentSyncRequest) map[string]string {
 		labels.PrimaryContainerName: getContainerName(primary(deploymentUnit)),
 	}
 	for k, v := range primary(deploymentUnit).Labels {
+		if strings.HasPrefix(k, labels.RancherLabelPrefix) {
+			continue
+		}
+
 		key := trimToLength(k, 63)
 		value := trimToLength(fmt.Sprint(v), 63)
 		if kubernetesLabelRegex.MatchString(key) && kubernetesLabelRegex.MatchString(value) {

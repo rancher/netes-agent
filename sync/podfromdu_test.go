@@ -60,6 +60,7 @@ func TestGetPodSpec(t *testing.T) {
 				PrimaryNetworkId: "1",
 				IpcMode:          "host",
 				PidMode:          "host",
+				Hostname:         "hostname",
 			},
 		},
 		Networks: []client.Network{
@@ -78,6 +79,7 @@ func TestGetPodSpec(t *testing.T) {
 		HostPID:       true,
 		DNSPolicy:     v1.DNSDefault,
 		NodeName:      "node1",
+		Hostname:      "hostname",
 	})
 }
 

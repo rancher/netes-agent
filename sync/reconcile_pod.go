@@ -82,9 +82,27 @@ func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName
 func getPodStatusMessage(pod v1.Pod) string {
 	var conditionMessages []string
 	for _, condition := range pod.Status.Conditions {
-		if condition.Status == "False" {
-			conditionMessages = append(conditionMessages, condition.Message)
+		if condition.Status != "False" {
+			continue
 		}
+
+		message := condition.Message
+		if condition.Type == v1.PodReady {
+			var containerStatusMessages []string
+			for _, containerStatus := range pod.Status.ContainerStatuses {
+				if containerStatus.Ready {
+					continue
+				}
+				if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Message != "" {
+					containerStatusMessages = append(containerStatusMessages, containerStatus.State.Waiting.Message)
+				}
+			}
+			if len(containerStatusMessages) > 0 {
+				message = fmt.Sprintf("%s (%s)", message, strings.Join(containerStatusMessages, ","))
+			}
+		}
+
+		conditionMessages = append(conditionMessages, message)
 	}
 	return fmt.Sprintf("%s: %s", pod.Status.Phase, strings.Join(conditionMessages, ";"))
 }

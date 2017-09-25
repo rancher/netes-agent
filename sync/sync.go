@@ -26,9 +26,6 @@ func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploy
 }
 
 func Remove(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest) error {
-	podName := deploymentUnit.ExternalId
-	if podName == "" {
-		podName = getPodName(deploymentUnit)
-	}
+	podName := getPodName(deploymentUnit)
 	return deletePod(clientset, watchClient, deploymentUnit.Namespace, podName)
 }

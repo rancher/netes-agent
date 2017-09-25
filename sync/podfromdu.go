@@ -77,6 +77,9 @@ func getContainer(container client.Container) v1.Container {
 }
 
 func getPodName(deploymentUnit client.DeploymentSyncRequest) string {
+	if deploymentUnit.ExternalId != "" {
+		return deploymentUnit.ExternalId
+	}
 	return fmt.Sprintf("%s-%s", trimToLength(strings.ToLower(primary(deploymentUnit).Name), 54), trimToLength(deploymentUnit.DeploymentUnitUuid, 8))
 }
 

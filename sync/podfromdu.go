@@ -171,20 +171,24 @@ func getInitContainers(deploymentUnit client.DeploymentSyncRequest) []v1.Contain
 }
 
 func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
-	return v1.PodSpec{
+	podSpec := v1.PodSpec{
 		RestartPolicy:      v1.RestartPolicyNever,
 		HostNetwork:        getHostNetwork(deploymentUnit),
 		HostIPC:            primary(deploymentUnit).IpcMode == "host",
 		HostPID:            primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:          v1.DNSDefault,
-		NodeName:           deploymentUnit.NodeName,
 		Hostname:           primary(deploymentUnit).Hostname,
-		Affinity:           getAffinity(primary(deploymentUnit), deploymentUnit.Namespace),
 		HostAliases:        getHostAliases(primary(deploymentUnit)),
 		Volumes:            getVolumes(deploymentUnit),
 		ImagePullSecrets:   getImagePullSecretReferences(deploymentUnit),
 		ServiceAccountName: getServiceAccountName(deploymentUnit),
 	}
+	if deploymentUnit.NodeName == "" {
+		podSpec.Affinity = getAffinity(primary(deploymentUnit), deploymentUnit.Namespace)
+	} else {
+		podSpec.NodeName = deploymentUnit.NodeName
+	}
+	return podSpec
 }
 
 func getServiceAccountName(deploymentUnit client.DeploymentSyncRequest) string {

@@ -26,7 +26,7 @@ var (
 	rancherPauseContainer = v1.Container{
 		Name: rancherPauseContainerName,
 		// TODO: figure out where to read this so it's not hard-coded
-		Image: "gcr.io/google_containers/pause-amd64:3.0",
+		Image: "rancher/pause-amd64:3.0",
 		Resources: v1.ResourceRequirements{
 			Requests: v1.ResourceList{
 				v1.ResourceMemory: resource.MustParse("0"),

@@ -178,6 +178,7 @@ func getPodSpec(deploymentUnit client.DeploymentSyncRequest) v1.PodSpec {
 		HostPID:            primary(deploymentUnit).PidMode == "host",
 		DNSPolicy:          v1.DNSDefault,
 		NodeName:           deploymentUnit.NodeName,
+		Hostname:           primary(deploymentUnit).Hostname,
 		Affinity:           getAffinity(primary(deploymentUnit), deploymentUnit.Namespace),
 		HostAliases:        getHostAliases(primary(deploymentUnit)),
 		Volumes:            getVolumes(deploymentUnit),

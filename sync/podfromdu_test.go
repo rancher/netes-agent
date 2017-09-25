@@ -51,9 +51,7 @@ func TestGetPodSpec(t *testing.T) {
 	assert.Equal(t, getPodSpec(client.DeploymentSyncRequest{
 		Containers: []client.Container{
 			{
-				Labels: map[string]string{
-					labels.ServiceLaunchConfig: labels.ServicePrimaryLaunchConfig,
-				},
+				LaunchConfigName: labels.ServicePrimaryLaunchConfig,
 				RestartPolicy: &client.RestartPolicy{
 					Name: "always",
 				},

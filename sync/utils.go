@@ -12,8 +12,7 @@ func primary(d client.DeploymentSyncRequest) client.Container {
 		return d.Containers[0]
 	}
 	for _, container := range d.Containers {
-		value, ok := container.Labels[labels.ServiceLaunchConfig]
-		if ok && value == labels.ServicePrimaryLaunchConfig {
+		if container.LaunchConfigName == labels.ServicePrimaryLaunchConfig {
 			return container
 		}
 	}

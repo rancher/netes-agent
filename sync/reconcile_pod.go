@@ -57,7 +57,7 @@ func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName stri
 
 func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(*client.DeploymentSyncResponse, string)) *v1.Pod {
 	var statusMessage string
-	for i := 0; i < 45; i++ {
+	for i := 0; i < 15; i++ {
 		if existingPod, ok := watchClient.GetPod(namespace, podName); ok {
 			primary := primaryContainerNameFromPod(existingPod)
 			for _, container := range existingPod.Status.ContainerStatuses {
@@ -138,11 +138,13 @@ func deletePod(clientset *kubernetes.Clientset, watchClient *watch.Client, names
 	} else if err != nil {
 		return err
 	}
-	for {
+	for i := 0; i < 15; i++ {
 		if _, ok := watchClient.GetPod(namespace, podName); !ok {
 			return nil
 		}
 		log.Infof("Waiting for pod %s to be deleted", podName)
 		time.Sleep(waitTime)
 	}
+
+	return fmt.Errorf("Timeout waiting for pod %s to be deleted", podName)
 }

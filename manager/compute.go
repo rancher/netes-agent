@@ -2,6 +2,7 @@ package manager
 
 import (
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
@@ -32,8 +33,8 @@ func (m *Manager) HandleComputeInstanceActivate(event *events.Event, apiClient *
 			return nil, fmt.Errorf("Failure with cluster %s: %v", request.ClusterId, err)
 		}
 
-		progressResponder := func(progressResponse *client.DeploymentSyncResponse, message string) {
-			publish := createPublish(progressResponse, event)
+		progressResponder := func(message string) {
+			publish := emptyReply(event)
 			publish.Transitioning = "yes"
 			publish.TransitioningMessage = message
 			if err := reply(publish, event, apiClient); err != nil {

@@ -6,7 +6,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest, progressResponder func(*client.DeploymentSyncResponse, string)) (*client.DeploymentSyncResponse, error) {
+func Activate(clientset *kubernetes.Clientset, watchClient *watch.Client, deploymentUnit client.DeploymentSyncRequest, progressResponder func(string)) (*client.DeploymentSyncResponse, error) {
 	credentialSecrets := getCredentialsFromDeploymentUnit(deploymentUnit)
 	if err := reconcileSecrets(clientset, deploymentUnit.Namespace, credentialSecrets); err != nil {
 		return nil, err

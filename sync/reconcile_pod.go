@@ -1,10 +1,10 @@
 package sync
 
 import (
-	"time"
-
+	errs "errors"
 	"fmt"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/netes-agent/labels"
@@ -22,6 +22,10 @@ const (
 	containerCannotRunReason = "ContainerCannotRun"
 )
 
+var (
+	errTimeoutDelete = errs.New("Timeout deleting pod")
+)
+
 func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(string)) (*v1.Pod, error) {
 	podName := desiredPod.Name
 	namespace := desiredPod.Namespace
@@ -37,6 +41,9 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			if existingPod.Labels[labels.RevisionLabel] != desiredRevision {
 				log.Infof("Pod %s has old revision", podName)
 				if err := deletePod(clientset, watchClient, namespace, podName); err != nil {
+					if err == errTimeoutDelete {
+						return nil, nil
+					}
 					return nil, err
 				}
 			} else {
@@ -192,5 +199,5 @@ func deletePod(clientset *kubernetes.Clientset, watchClient *watch.Client, names
 		time.Sleep(waitTime)
 	}
 
-	return fmt.Errorf("Timeout waiting for pod %s to be deleted", podName)
+	return errTimeoutDelete
 }

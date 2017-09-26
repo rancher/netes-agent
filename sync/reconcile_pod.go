@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"fmt"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
@@ -12,11 +14,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	"strings"
 )
 
 const (
-	waitTime = time.Second
+	waitTime                 = time.Second
+	timeoutDuration          = 5 * time.Minute
+	imagePullBackOffReason   = "ImagePullBackOff"
+	containerCannotRunReason = "ContainerCannotRun"
 )
 
 func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(*client.DeploymentSyncResponse, string)) (*v1.Pod, error) {
@@ -36,12 +40,14 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 				if err := deletePod(clientset, watchClient, namespace, podName); err != nil {
 					return nil, err
 				}
+			} else {
+				break
 			}
 		} else if err != nil {
 			return nil, err
 		}
 	}
-	return waitForPodContainersToBeReady(watchClient, namespace, podName, progressResponder), nil
+	return waitForPodContainersToBeReady(watchClient, namespace, podName, progressResponder)
 }
 
 func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName string) (*v1.Pod, bool) {
@@ -55,19 +61,24 @@ func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName stri
 	return nil, false
 }
 
-func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(*client.DeploymentSyncResponse, string)) *v1.Pod {
+func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(*client.DeploymentSyncResponse, string)) (*v1.Pod, error) {
 	var statusMessage string
 	for i := 0; i < 15; i++ {
 		if existingPod, ok := watchClient.GetPod(namespace, podName); ok {
 			primary := primaryContainerNameFromPod(existingPod)
 			for _, container := range existingPod.Status.ContainerStatuses {
 				if container.Name == primary && container.Ready {
-					return &existingPod
+					return &existingPod, nil
 				}
 			}
 
-			currentStatusMessage := getPodStatusMessage(existingPod)
+			currentStatusMessage, err := getPodStatusMessage(existingPod)
+			if err != nil {
+				return nil, err
+			}
+
 			if currentStatusMessage != statusMessage {
+				// TODO: does deploymentSyncRequest need to be set for transitioning message?
 				response := responseFromPod(existingPod)
 				progressResponder(&response, currentStatusMessage)
 				statusMessage = currentStatusMessage
@@ -76,35 +87,73 @@ func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName
 		log.Infof("Waiting for containers of pod %s to be ready", podName)
 		time.Sleep(waitTime)
 	}
-	return nil
+	return nil, nil
 }
 
-func getPodStatusMessage(pod v1.Pod) string {
+func getPodStatusMessage(pod v1.Pod) (string, error) {
 	var conditionMessages []string
 	for _, condition := range pod.Status.Conditions {
 		if condition.Status != "False" {
 			continue
 		}
-
 		message := condition.Message
 		if condition.Type == v1.PodReady {
-			var containerStatusMessages []string
-			for _, containerStatus := range pod.Status.ContainerStatuses {
-				if containerStatus.Ready {
-					continue
-				}
-				if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Message != "" {
-					containerStatusMessages = append(containerStatusMessages, containerStatus.State.Waiting.Message)
-				}
+			statusMessage, err := getAllContainerStatusMessage(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses)
+			if err != nil {
+				return "", err
 			}
-			if len(containerStatusMessages) > 0 {
-				message = fmt.Sprintf("%s (%s)", message, strings.Join(containerStatusMessages, ","))
+			if statusMessage != "" {
+				message = fmt.Sprintf("%s (%s)", message, statusMessage)
 			}
 		}
-
 		conditionMessages = append(conditionMessages, message)
 	}
-	return fmt.Sprintf("%s: %s", pod.Status.Phase, strings.Join(conditionMessages, ";"))
+	return fmt.Sprintf("%s: %s", pod.Status.Phase, strings.Join(conditionMessages, ";")), nil
+}
+
+func getAllContainerStatusMessage(containerStatuses, initContainerStatuses []v1.ContainerStatus) (string, error) {
+	initContainerStatusMessages, err := getContainerStatusMessages(initContainerStatuses)
+	if err != nil {
+		return "", err
+	}
+	if len(initContainerStatusMessages) > 0 {
+		return strings.Join(initContainerStatusMessages, ","), nil
+	}
+	containerStatusMessages, err := getContainerStatusMessages(containerStatuses)
+	if err != nil {
+		return "", err
+	}
+	if len(containerStatusMessages) == 0 {
+		return "", nil
+	}
+	return strings.Join(containerStatusMessages, ","), nil
+}
+
+func getContainerStatusMessages(containerStatuses []v1.ContainerStatus) ([]string, error) {
+	var containerStatusMessages []string
+	for _, containerStatus := range containerStatuses {
+		if containerStatus.Ready {
+			continue
+		}
+		if containerStatus.State.Waiting != nil {
+			message := containerStatus.State.Waiting.Message
+			if containerStatus.State.Waiting.Reason == imagePullBackOffReason {
+				return nil, fmt.Errorf("%s: %v", imagePullBackOffReason, message)
+			}
+			if message != "" {
+				containerStatusMessages = append(containerStatusMessages, message)
+			}
+		} else if containerStatus.State.Terminated != nil {
+			message := containerStatus.State.Terminated.Message
+			if containerStatus.State.Terminated.Reason == containerCannotRunReason {
+				return nil, fmt.Errorf("%s: %v", containerCannotRunReason, message)
+			}
+			if message != "" {
+				containerStatusMessages = append(containerStatusMessages, message)
+			}
+		}
+	}
+	return containerStatusMessages, nil
 }
 
 func createPod(clientset *kubernetes.Clientset, pod v1.Pod) error {

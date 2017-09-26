@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/watch"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -23,7 +22,7 @@ const (
 	containerCannotRunReason = "ContainerCannotRun"
 )
 
-func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(*client.DeploymentSyncResponse, string)) (*v1.Pod, error) {
+func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(string)) (*v1.Pod, error) {
 	podName := desiredPod.Name
 	namespace := desiredPod.Namespace
 	desiredRevision := desiredPod.Labels[labels.RevisionLabel]
@@ -61,7 +60,7 @@ func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName stri
 	return nil, false
 }
 
-func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(*client.DeploymentSyncResponse, string)) (*v1.Pod, error) {
+func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(string)) (*v1.Pod, error) {
 	var statusMessage string
 	for i := 0; i < 15; i++ {
 		if existingPod, ok := watchClient.GetPod(namespace, podName); ok {
@@ -78,9 +77,7 @@ func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName
 			}
 
 			if currentStatusMessage != statusMessage {
-				// TODO: does deploymentSyncRequest need to be set for transitioning message?
-				response := responseFromPod(existingPod)
-				progressResponder(&response, currentStatusMessage)
+				progressResponder(currentStatusMessage)
 				statusMessage = currentStatusMessage
 			}
 		}

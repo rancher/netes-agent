@@ -6,9 +6,16 @@ echo Starting Docker in Docker
 export SOCK=/var/run/dind.sock
 export DOCKER_HOST=unix://${SOCK}
 
-docker daemon -D -H $DOCKER_HOST &> /dev/null &
+docker daemon -s vfs -H $DOCKER_HOST &> /dev/null &
 
 echo Docker in Docker started
+
+until docker -H $DOCKER_HOST info
+do
+    echo Waiting for Docker to be ready
+    sleep 1
+done
+
 
 echo Starting Kubernetes
 
@@ -20,4 +27,8 @@ hyperkube kubelet --api-servers=http://0.0.0.0:8080 --docker-endpoint=$DOCKER_HO
 
 echo All Kubernetes components started
 
-sleep 15
+until hyperkube kubectl get node | grep Ready
+do
+    echo Waiting for node to be ready
+    sleep 1
+done

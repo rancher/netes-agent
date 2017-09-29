@@ -1,9 +1,10 @@
 package manager
 
 import (
+	"net/url"
+
 	"github.com/rancher/go-rancher/v3"
 	"golang.org/x/sync/syncmap"
-	"net/url"
 )
 
 type Manager struct {

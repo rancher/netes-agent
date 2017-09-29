@@ -8,14 +8,15 @@ import (
 	"github.com/rancher/go-rancher/v3"
 )
 
-func wrapHandler(handler func(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error)) func(event *events.Event, apiClient *client.RancherClient) error {
+func wrapHandler(handler func(event *events.Event, rancherClient Client) (*client.Publish, error)) func(event *events.Event, apiClient *client.RancherClient) error {
 	return func(event *events.Event, apiClient *client.RancherClient) error {
-		publish, err := handler(event, apiClient)
+		rancherClient := NewRancherClient(apiClient)
+		publish, err := handler(event, rancherClient)
 		if err != nil {
 			return err
 		}
 		if publish != nil {
-			return reply(publish, event, apiClient)
+			return reply(publish, event, rancherClient)
 		}
 		return nil
 	}
@@ -36,11 +37,10 @@ func createPublish(response *client.DeploymentSyncResponse, event *events.Event)
 	return reply
 }
 
-func reply(publish *client.Publish, event *events.Event, apiClient *client.RancherClient) error {
+func reply(publish *client.Publish, event *events.Event, rancherClient Client) error {
 	log.Infof("Reply: %+v", publish)
 
-	_, err := apiClient.Publish.Create(publish)
-	if err != nil {
+	if err := rancherClient.Publish(publish); err != nil {
 		return fmt.Errorf("Error sending reply %v: %v", event.ID, err)
 	}
 

@@ -28,10 +28,12 @@ RUN wget -O - https://github.com/joshwget/kubernetes-package/releases/download/b
 ENV DAPPER_SOURCE /go/src/github.com/rancher/netes-agent/
 ENV DAPPER_OUTPUT ./bin ./dist
 ENV DAPPER_RUN_ARGS --privileged
-ENV DAPPER_DOCKER_SOCKET true
+
 ENV TRASH_CACHE ${DAPPER_SOURCE}/.trash-cache
 ENV HOME ${DAPPER_SOURCE}
 WORKDIR ${DAPPER_SOURCE}
+
+VOLUME "/var/lib/docker"
 
 ENTRYPOINT ["./scripts/entry"]
 CMD ["ci"]

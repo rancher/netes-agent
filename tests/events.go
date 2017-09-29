@@ -14,7 +14,7 @@ var (
 		c.Tty = true
 		c.StdinOpen = true
 		c.WorkingDir = "/usr"
-		c.Environment = map[string]interface{}{
+		c.Environment = map[string]string{
 			"TEST": "true",
 		}
 	})

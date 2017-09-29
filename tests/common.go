@@ -3,19 +3,20 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path"
+	"strings"
+	"testing"
+
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/manager"
 	"github.com/rancher/netes-agent/utils"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
-	"path"
-	"strings"
-	"testing"
 )
 
 const (
@@ -36,18 +37,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	testManager = manager.New(nil)
-	testManager.SyncClusters([]client.Cluster{
-		{
-			Resource: client.Resource{
-				Id: "1c1",
-			},
-			K8sClientConfig: &client.K8sClientConfig{
-				Address: kubernetesAddress,
-			},
-		},
-	})
 }
 
 func nextDeploymentUUID() string {
@@ -67,7 +57,7 @@ func simulateEvent(t *testing.T, event events.Event, deploymentUUID string) (*cl
 		}
 	})
 
-	response, err := testManager.HandleComputeInstanceActivate(&event)
+	response, err := testManager.HandleComputeInstanceActivate(&event, &mockClient{})
 	assert.NoError(t, err)
 
 	var deploymentSyncResponse client.DeploymentSyncResponse

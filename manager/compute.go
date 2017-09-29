@@ -26,9 +26,9 @@ func callDeploymentSyncHandler(event *events.Event, handler deploymentSyncHandle
 	return handler(request)
 }
 
-func (m *Manager) HandleComputeInstanceActivate(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
+func (m *Manager) HandleComputeInstanceActivate(event *events.Event, rancherClient Client) (*client.Publish, error) {
 	return callDeploymentSyncHandler(event, func(request client.DeploymentSyncRequest) (*client.Publish, error) {
-		clientset, watchClient, err := m.getCluster(request.ClusterId)
+		clientset, watchClient, err := m.getCluster(rancherClient, request.ClusterId)
 		if err != nil {
 			return nil, fmt.Errorf("Failure with cluster %s: %v", request.ClusterId, err)
 		}
@@ -37,7 +37,7 @@ func (m *Manager) HandleComputeInstanceActivate(event *events.Event, apiClient *
 			publish := emptyReply(event)
 			publish.Transitioning = "yes"
 			publish.TransitioningMessage = message
-			if err := reply(publish, event, apiClient); err != nil {
+			if err := reply(publish, event, rancherClient); err != nil {
 				log.Errorf("Failed to publish progress: %v", err)
 			}
 		}
@@ -53,9 +53,9 @@ func (m *Manager) HandleComputeInstanceActivate(event *events.Event, apiClient *
 	})
 }
 
-func (m *Manager) HandleComputeInstanceRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
+func (m *Manager) HandleComputeInstanceRemove(event *events.Event, rancherClient Client) (*client.Publish, error) {
 	return callDeploymentSyncHandler(event, func(request client.DeploymentSyncRequest) (*client.Publish, error) {
-		clientset, watchClient, err := m.getCluster(request.ClusterId)
+		clientset, watchClient, err := m.getCluster(rancherClient, request.ClusterId)
 		if err != nil {
 			return emptyReply(event), nil
 		}

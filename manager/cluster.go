@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/v3"
@@ -13,13 +14,13 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func (m *Manager) getCluster(clusterID string) (*kubernetes.Clientset, *watch.Client, error) {
+func (m *Manager) getCluster(rancherClient Client, clusterID string) (*kubernetes.Clientset, *watch.Client, error) {
 	clientsetRaw, _ := m.clientsets.Load(clusterID)
 	watchClientRaw, ok := m.watchClients.Load(clusterID)
 	if ok {
 		return clientsetRaw.(*kubernetes.Clientset), watchClientRaw.(*watch.Client), nil
 	}
-	cluster, err := m.rancherClient.Cluster.ById(clusterID)
+	cluster, err := rancherClient.GetCluster(clusterID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -82,7 +83,7 @@ func (m *Manager) removeCluster(cluster client.Cluster) error {
 	return nil
 }
 
-func (m *Manager) handleClusterRemove(event *events.Event, apiClient *client.RancherClient) (*client.Publish, error) {
+func (m *Manager) handleClusterRemove(event *events.Event, rancherClient Client) (*client.Publish, error) {
 	var cluster client.Cluster
 	if err := utils.ConvertByJSON(event.Data["cluster"], &cluster); err != nil {
 		return nil, err

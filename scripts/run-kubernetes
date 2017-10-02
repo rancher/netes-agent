@@ -32,3 +32,6 @@ do
     echo Waiting for node to be ready
     sleep 1
 done
+
+docker pull nginx
+docker pull nginx:1.13

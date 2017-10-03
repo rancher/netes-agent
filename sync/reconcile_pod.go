@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	errTimeoutDelete = errs.New("Timeout deleting pod")
+	ErrTimeout = errs.New("Timeout")
 )
 
 func shouldRemove(deploymentUnit client.DeploymentSyncRequest) bool {
@@ -66,9 +66,6 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			}
 
 			if err := deletePod(clientset, watchClient, namespace, podName, true); err != nil {
-				if err == errTimeoutDelete {
-					return nil, nil
-				}
 				return nil, err
 			}
 		} else if err != nil {
@@ -243,5 +240,5 @@ func deletePod(clientset *kubernetes.Clientset, watchClient *watch.Client, names
 		time.Sleep(waitTime)
 	}
 
-	return errTimeoutDelete
+	return ErrTimeout
 }

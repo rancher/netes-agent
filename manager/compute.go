@@ -43,12 +43,9 @@ func (m *Manager) HandleComputeSync(event *events.Event, rancherClient Client) (
 		}
 
 		response, err := sync.Sync(clientset, watchClient, request, progressResponder)
-		if err != nil {
-			return nil, err
-		}
-		if response == nil {
+		if err == sync.ErrTimeout {
 			return nil, nil
 		}
-		return createPublish(response, event), nil
+		return createPublish(response, event), err
 	})
 }

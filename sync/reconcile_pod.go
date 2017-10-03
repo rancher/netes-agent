@@ -52,16 +52,24 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			if !ok {
 				continue
 			}
-			if existingPod.Labels[labels.RevisionLabel] != desiredRevision {
+			shouldDelete := false
+			if existingPod.Status.Phase == v1.PodSucceeded || existingPod.Status.Phase == v1.PodFailed {
+				shouldDelete = true
+				log.Infof("Pod %s has is in phase %s", podName, existingPod.Status.Phase)
+			} else if existingPod.Labels[labels.RevisionLabel] != desiredRevision {
+				shouldDelete = true
 				log.Infof("Pod %s has old revision", podName)
-				if err := deletePod(clientset, watchClient, namespace, podName, true); err != nil {
-					if err == errTimeoutDelete {
-						return nil, nil
-					}
-					return nil, err
-				}
-			} else {
+			}
+
+			if !shouldDelete {
 				break
+			}
+
+			if err := deletePod(clientset, watchClient, namespace, podName, true); err != nil {
+				if err == errTimeoutDelete {
+					return nil, nil
+				}
+				return nil, err
 			}
 		} else if err != nil {
 			return nil, err

@@ -26,7 +26,7 @@ func callDeploymentSyncHandler(event *events.Event, handler deploymentSyncHandle
 	return handler(request)
 }
 
-func (m *Manager) HandleComputeInstanceActivate(event *events.Event, rancherClient Client) (*client.Publish, error) {
+func (m *Manager) HandleComputeSync(event *events.Event, rancherClient Client) (*client.Publish, error) {
 	return callDeploymentSyncHandler(event, func(request client.DeploymentSyncRequest) (*client.Publish, error) {
 		clientset, watchClient, err := m.getCluster(rancherClient, request.ClusterId)
 		if err != nil {
@@ -42,7 +42,7 @@ func (m *Manager) HandleComputeInstanceActivate(event *events.Event, rancherClie
 			}
 		}
 
-		response, err := sync.Activate(clientset, watchClient, request, progressResponder)
+		response, err := sync.Sync(clientset, watchClient, request, progressResponder)
 		if err != nil {
 			return nil, err
 		}
@@ -50,15 +50,5 @@ func (m *Manager) HandleComputeInstanceActivate(event *events.Event, rancherClie
 			return nil, nil
 		}
 		return createPublish(response, event), nil
-	})
-}
-
-func (m *Manager) HandleComputeInstanceRemove(event *events.Event, rancherClient Client) (*client.Publish, error) {
-	return callDeploymentSyncHandler(event, func(request client.DeploymentSyncRequest) (*client.Publish, error) {
-		clientset, watchClient, err := m.getCluster(rancherClient, request.ClusterId)
-		if err != nil {
-			return emptyReply(event), nil
-		}
-		return emptyReply(event), sync.Remove(clientset, watchClient, request)
 	})
 }

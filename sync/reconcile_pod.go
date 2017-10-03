@@ -7,6 +7,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/rancher/go-rancher/v3"
 	"github.com/rancher/netes-agent/labels"
 	"github.com/rancher/netes-agent/watch"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,7 +27,20 @@ var (
 	errTimeoutDelete = errs.New("Timeout deleting pod")
 )
 
-func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, progressResponder func(string)) (*v1.Pod, error) {
+func shouldRemove(deploymentUnit client.DeploymentSyncRequest) bool {
+	if len(deploymentUnit.Containers) == 0 {
+		return true
+	}
+
+	container := deploymentUnit.Containers[0]
+	if container.State == "removing" || container.Removed != "" {
+		return true
+	}
+
+	return false
+}
+
+func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, desiredPod v1.Pod, deploymentUnit client.DeploymentSyncRequest, progressResponder func(string)) (*v1.Pod, error) {
 	podName := desiredPod.Name
 	namespace := desiredPod.Namespace
 	desiredRevision := desiredPod.Labels[labels.RevisionLabel]
@@ -40,7 +54,7 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			}
 			if existingPod.Labels[labels.RevisionLabel] != desiredRevision {
 				log.Infof("Pod %s has old revision", podName)
-				if err := deletePod(clientset, watchClient, namespace, podName); err != nil {
+				if err := deletePod(clientset, watchClient, namespace, podName, true); err != nil {
 					if err == errTimeoutDelete {
 						return nil, nil
 					}
@@ -53,7 +67,7 @@ func reconcilePod(clientset *kubernetes.Clientset, watchClient *watch.Client, de
 			return nil, err
 		}
 	}
-	return waitForPodContainersToBeReady(watchClient, namespace, podName, progressResponder)
+	return waitForPodContainersToBeReady(watchClient, namespace, podName, deploymentUnit, progressResponder)
 }
 
 func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName string) (*v1.Pod, bool) {
@@ -67,18 +81,18 @@ func waitForCacheToContainPod(watchClient *watch.Client, namespace, podName stri
 	return nil, false
 }
 
-func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, progressResponder func(string)) (*v1.Pod, error) {
+func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName string, deploymentUnit client.DeploymentSyncRequest, progressResponder func(string)) (*v1.Pod, error) {
 	var statusMessage string
 	for i := 0; i < 15; i++ {
 		if existingPod, ok := watchClient.GetPod(namespace, podName); ok {
-			primary := primaryContainerNameFromPod(existingPod)
+			firstContainer := deploymentUnit.Containers[0]
 			for _, container := range existingPod.Status.ContainerStatuses {
-				if container.Name == primary && container.Ready {
+				if strings.HasSuffix(container.Name, firstContainer.Uuid) && container.ContainerID != "" {
 					return &existingPod, nil
 				}
 			}
 
-			currentStatusMessage, err := getPodStatusMessage(existingPod)
+			currentStatusMessage, err := getPodStatusMessage(existingPod, firstContainer.Uuid)
 			if err != nil {
 				return nil, err
 			}
@@ -94,8 +108,7 @@ func waitForPodContainersToBeReady(watchClient *watch.Client, namespace, podName
 	return nil, nil
 }
 
-func getPodStatusMessage(pod v1.Pod) (string, error) {
-	var conditionMessages []string
+func getPodStatusMessage(pod v1.Pod, uuid string) (string, error) {
 	for _, condition := range pod.Status.Conditions {
 		if condition.Status != "False" {
 			continue
@@ -110,9 +123,18 @@ func getPodStatusMessage(pod v1.Pod) (string, error) {
 				message = fmt.Sprintf("%s (%s)", message, statusMessage)
 			}
 		}
-		conditionMessages = append(conditionMessages, message)
 	}
-	return fmt.Sprintf("%s: %s", pod.Status.Phase, strings.Join(conditionMessages, ";")), nil
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.State.Waiting != nil {
+			msg := status.State.Waiting.Reason
+			if status.State.Waiting.Message != "" {
+				msg = fmt.Sprintf("%s: %s", msg, status.State.Waiting.Message)
+			}
+			return msg, nil
+		}
+
+	}
+	return "Waiting on pod " + pod.Name, nil
 }
 
 func getAllContainerStatusMessage(containerStatuses, initContainerStatuses []v1.ContainerStatus) (string, error) {
@@ -184,7 +206,7 @@ func ensureNamespaceExists(clientset *kubernetes.Clientset, namespace string) er
 	return err
 }
 
-func deletePod(clientset *kubernetes.Clientset, watchClient *watch.Client, namespace, podName string) error {
+func deletePod(clientset *kubernetes.Clientset, watchClient *watch.Client, namespace, podName string, full bool) error {
 	log.Infof("Deleting pod %s", podName)
 	if err := clientset.Pods(namespace).Delete(podName, &metav1.DeleteOptions{}); errors.IsNotFound(err) {
 		return nil
@@ -192,9 +214,23 @@ func deletePod(clientset *kubernetes.Clientset, watchClient *watch.Client, names
 		return err
 	}
 	for i := 0; i < 15; i++ {
-		if _, ok := watchClient.GetPod(namespace, podName); !ok {
+		pod, ok := watchClient.GetPod(namespace, podName)
+		if !ok {
 			return nil
 		}
+		if !full {
+			allTerminated := true
+			for _, containerStatus := range pod.Status.ContainerStatuses {
+				if containerStatus.State.Terminated == nil {
+					allTerminated = false
+				}
+			}
+			if allTerminated {
+				log.Infof("Waiting for pod %s to be deleted: all containers stopped", podName)
+				return nil
+			}
+		}
+
 		log.Infof("Waiting for pod %s to be deleted", podName)
 		time.Sleep(waitTime)
 	}

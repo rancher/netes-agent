@@ -30,6 +30,9 @@ func emptyReply(event *events.Event) *client.Publish {
 }
 
 func createPublish(response *client.DeploymentSyncResponse, event *events.Event) *client.Publish {
+	if response == nil {
+		return nil
+	}
 	reply := emptyReply(event)
 	reply.Data = map[string]interface{}{
 		"deploymentSyncResponse": response,
